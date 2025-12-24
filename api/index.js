@@ -26,16 +26,16 @@ try {
   const paymentRoutes = (await import('../apps/backend/src/routes/payment.routes.js')).default;
   const dashboardRoutes = (await import('../apps/backend/src/routes/dashboard.routes.js')).default;
 
-  // API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/menus', menuRoutes);
-  app.use('/api/categories', categoryRoutes);
-  app.use('/api/foods', foodRoutes);
-  app.use('/api/barcodes', barcodeRoutes);
-  app.use('/api/barcode', barcodeRoutes);
-  app.use('/api/transactions', transactionRoutes);
-  app.use('/api/payment', paymentRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
+  // API Routes - NO /api prefix because Vercel handles /api/* rewrite
+  app.use('/auth', authRoutes);
+  app.use('/menus', menuRoutes);
+  app.use('/categories', categoryRoutes);
+  app.use('/foods', foodRoutes);
+  app.use('/barcodes', barcodeRoutes);
+  app.use('/barcode', barcodeRoutes);
+  app.use('/transactions', transactionRoutes);
+  app.use('/payment', paymentRoutes);
+  app.use('/dashboard', dashboardRoutes);
   
   routesLoaded = true;
 } catch (error) {
@@ -43,8 +43,8 @@ try {
   console.error('Failed to load routes:', error);
 }
 
-// Health check
-app.get('/api/health', (req, res) => {
+// Health check - matches /api/health via rewrite
+app.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'API is running on Vercel',
@@ -54,12 +54,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Root handler
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Menu Digital API',
+    endpoints: ['/auth', '/menus', '/categories', '/foods', '/barcodes', '/transactions', '/payment', '/dashboard'],
+  });
+});
+
 // 404 handler
-app.use('/api/*', (req, res) => {
+app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found',
-    path: req.path,
+    path: req.originalUrl,
     routesLoaded,
   });
 });
