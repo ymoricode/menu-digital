@@ -1,4 +1,5 @@
 import foodService from '../services/food.service.js';
+import cloudinaryService from '../services/cloudinary.service.js';
 
 /**
  * Get all foods
@@ -54,9 +55,18 @@ export const create = async (req, res) => {
     const { name, description, price, categoriesId } = req.body;
     let image = req.body.image;
 
-    // Handle file upload
+    // Handle file upload - try Cloudinary first, fallback to local
     if (req.file) {
-      image = `/uploads/${req.file.filename}`;
+      if (cloudinaryService.isCloudinaryConfigured()) {
+        // Upload to Cloudinary
+        const uploadResult = await cloudinaryService.uploadFromPath(req.file.path, 'menu-digital/foods');
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
+      } else {
+        // Fallback to local storage
+        image = `/uploads/${req.file.filename}`;
+      }
     }
 
     if (!name || !price) {
@@ -96,9 +106,18 @@ export const update = async (req, res) => {
     const { name, description, price, categoriesId } = req.body;
     let image = req.body.image;
 
-    // Handle file upload
+    // Handle file upload - try Cloudinary first, fallback to local
     if (req.file) {
-      image = `/uploads/${req.file.filename}`;
+      if (cloudinaryService.isCloudinaryConfigured()) {
+        // Upload to Cloudinary
+        const uploadResult = await cloudinaryService.uploadFromPath(req.file.path, 'menu-digital/foods');
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
+      } else {
+        // Fallback to local storage
+        image = `/uploads/${req.file.filename}`;
+      }
     }
 
     const food = await foodService.update(parseInt(id), {
