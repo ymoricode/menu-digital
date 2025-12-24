@@ -8,99 +8,115 @@ const app = express();
 app.use(cors({
   origin: '*',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Vercel path reconstruction middleware
-// Vercel rewrites /api/auth/login to /api/index.js?path=auth/login
-// We need to reconstruct the original path
-app.use((req, res, next) => {
-  if (req.query.path) {
-    // Reconstruct the URL from the path query parameter
-    const pathFromQuery = '/' + req.query.path;
-    req.url = pathFromQuery;
-    req.originalUrl = '/api' + pathFromQuery;
-  }
-  next();
-});
-
-// Try to load routes with error handling
+// Route handler - manual routing based on query.path from Vercel rewrite
+let authRoutes, menuRoutes, categoryRoutes, foodRoutes, barcodeRoutes, transactionRoutes, paymentRoutes, dashboardRoutes;
 let routesLoaded = false;
 let loadError = null;
 
 try {
-  const authRoutes = (await import('../apps/backend/src/routes/auth.routes.js')).default;
-  const menuRoutes = (await import('../apps/backend/src/routes/menu.routes.js')).default;
-  const categoryRoutes = (await import('../apps/backend/src/routes/category.routes.js')).default;
-  const foodRoutes = (await import('../apps/backend/src/routes/food.routes.js')).default;
-  const barcodeRoutes = (await import('../apps/backend/src/routes/barcode.routes.js')).default;
-  const transactionRoutes = (await import('../apps/backend/src/routes/transaction.routes.js')).default;
-  const paymentRoutes = (await import('../apps/backend/src/routes/payment.routes.js')).default;
-  const dashboardRoutes = (await import('../apps/backend/src/routes/dashboard.routes.js')).default;
-
-  // API Routes - without /api prefix since we reconstructed the path
-  app.use('/auth', authRoutes);
-  app.use('/menus', menuRoutes);
-  app.use('/categories', categoryRoutes);
-  app.use('/foods', foodRoutes);
-  app.use('/barcodes', barcodeRoutes);
-  app.use('/barcode', barcodeRoutes);
-  app.use('/transactions', transactionRoutes);
-  app.use('/payment', paymentRoutes);
-  app.use('/dashboard', dashboardRoutes);
-  
+  authRoutes = (await import('../apps/backend/src/routes/auth.routes.js')).default;
+  menuRoutes = (await import('../apps/backend/src/routes/menu.routes.js')).default;
+  categoryRoutes = (await import('../apps/backend/src/routes/category.routes.js')).default;
+  foodRoutes = (await import('../apps/backend/src/routes/food.routes.js')).default;
+  barcodeRoutes = (await import('../apps/backend/src/routes/barcode.routes.js')).default;
+  transactionRoutes = (await import('../apps/backend/src/routes/transaction.routes.js')).default;
+  paymentRoutes = (await import('../apps/backend/src/routes/payment.routes.js')).default;
+  dashboardRoutes = (await import('../apps/backend/src/routes/dashboard.routes.js')).default;
   routesLoaded = true;
 } catch (error) {
   loadError = error;
   console.error('Failed to load routes:', error);
 }
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is running on Vercel',
-    routesLoaded,
-    error: loadError ? loadError.message : null,
-    timestamp: new Date().toISOString(),
-  });
-});
+// Main request handler - extract path from query and route manually
+app.all('*', (req, res, next) => {
+  const queryPath = req.query.path || '';
+  
+  // Health check
+  if (queryPath === 'health' || req.path === '/health') {
+    return res.json({
+      success: true,
+      message: 'API is running on Vercel',
+      routesLoaded,
+      error: loadError ? loadError.message : null,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
-// Debug endpoint
-app.get('/debug', (req, res) => {
-  res.json({
-    url: req.url,
-    path: req.path,
-    originalUrl: req.originalUrl,
-    query: req.query,
-    method: req.method,
-  });
-});
+  // Debug endpoint
+  if (queryPath === 'debug' || req.path === '/debug') {
+    return res.json({
+      queryPath,
+      url: req.url,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      query: req.query,
+      method: req.method,
+      routesLoaded,
+    });
+  }
 
-// Root handler
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Menu Digital API',
-    endpoints: ['/auth', '/menus', '/categories', '/foods', '/barcodes', '/transactions', '/payment', '/dashboard'],
-  });
-});
+  // If no query path, show API info
+  if (!queryPath) {
+    return res.json({
+      success: true,
+      message: 'Menu Digital API',
+      endpoints: ['/auth', '/menus', '/categories', '/foods', '/barcodes', '/transactions', '/payment', '/dashboard'],
+    });
+  }
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found',
-    url: req.url,
-    path: req.path,
-    query: req.query,
-    routesLoaded,
-  });
+  // Parse the path to determine which router to use
+  const pathParts = queryPath.split('/');
+  const basePath = pathParts[0];
+  const subPath = '/' + pathParts.slice(1).join('/');
+  
+  // Modify req.url and req.path for the sub-router
+  req.url = subPath || '/';
+  req.baseUrl = '/' + basePath;
+
+  // Route to appropriate router
+  if (!routesLoaded) {
+    return res.status(500).json({
+      success: false,
+      message: 'Routes not loaded',
+      error: loadError ? loadError.message : 'Unknown error',
+    });
+  }
+
+  switch (basePath) {
+    case 'auth':
+      return authRoutes(req, res, next);
+    case 'menus':
+      return menuRoutes(req, res, next);
+    case 'categories':
+      return categoryRoutes(req, res, next);
+    case 'foods':
+      return foodRoutes(req, res, next);
+    case 'barcodes':
+    case 'barcode':
+      return barcodeRoutes(req, res, next);
+    case 'transactions':
+      return transactionRoutes(req, res, next);
+    case 'payment':
+      return paymentRoutes(req, res, next);
+    case 'dashboard':
+      return dashboardRoutes(req, res, next);
+    default:
+      return res.status(404).json({
+        success: false,
+        message: 'API endpoint not found',
+        queryPath,
+        basePath,
+        subPath,
+      });
+  }
 });
 
 // Export for Vercel
 export default app;
-
-
-
