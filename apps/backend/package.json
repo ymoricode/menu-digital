@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Menu Digital Backend API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.29.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.3",
+    "qrcode": "^1.5.3",
+    "uuid": "^9.0.1",
+    "xendit-node": "^4.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.10",
+    "nodemon": "^3.0.2"
+  }
+}
