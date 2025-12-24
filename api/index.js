@@ -12,6 +12,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Debug middleware - log all requests
+app.use((req, res, next) => {
+  console.log('Request:', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+  });
+  next();
+});
+
 // Try to load routes with error handling
 let routesLoaded = false;
 let loadError = null;
@@ -26,7 +38,18 @@ try {
   const paymentRoutes = (await import('../apps/backend/src/routes/payment.routes.js')).default;
   const dashboardRoutes = (await import('../apps/backend/src/routes/dashboard.routes.js')).default;
 
-  // API Routes - NO /api prefix because Vercel handles /api/* rewrite
+  // API Routes - with /api prefix
+  app.use('/api/auth', authRoutes);
+  app.use('/api/menus', menuRoutes);
+  app.use('/api/categories', categoryRoutes);
+  app.use('/api/foods', foodRoutes);
+  app.use('/api/barcodes', barcodeRoutes);
+  app.use('/api/barcode', barcodeRoutes);
+  app.use('/api/transactions', transactionRoutes);
+  app.use('/api/payment', paymentRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
+
+  // Also without /api prefix as fallback
   app.use('/auth', authRoutes);
   app.use('/menus', menuRoutes);
   app.use('/categories', categoryRoutes);
@@ -43,8 +66,8 @@ try {
   console.error('Failed to load routes:', error);
 }
 
-// Health check - matches /api/health via rewrite
-app.get('/health', (req, res) => {
+// Health check - both paths
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     success: true,
     message: 'API is running on Vercel',
@@ -54,12 +77,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root handler
-app.get('/', (req, res) => {
+// Debug endpoint
+app.get(['/debug', '/api/debug'], (req, res) => {
   res.json({
-    success: true,
-    message: 'Menu Digital API',
-    endpoints: ['/auth', '/menus', '/categories', '/foods', '/barcodes', '/transactions', '/payment', '/dashboard'],
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    method: req.method,
+    headers: req.headers,
   });
 });
 
@@ -68,11 +94,14 @@ app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found',
-    path: req.originalUrl,
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
     routesLoaded,
   });
 });
 
 // Export for Vercel
 export default app;
+
 
