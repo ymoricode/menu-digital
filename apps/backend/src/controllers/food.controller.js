@@ -55,17 +55,19 @@ export const create = async (req, res) => {
     const { name, description, price, categoriesId } = req.body;
     let image = req.body.image;
 
-    // Handle file upload - try Cloudinary first, fallback to local
-    if (req.file) {
+    // Handle file upload - use buffer from memoryStorage for Vercel
+    if (req.file && req.file.buffer) {
       if (cloudinaryService.isCloudinaryConfigured()) {
-        // Upload to Cloudinary
-        const uploadResult = await cloudinaryService.uploadFromPath(req.file.path, 'menu-digital/foods');
-        if (uploadResult) {
-          image = uploadResult.url;
+        // Upload buffer to Cloudinary
+        try {
+          const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, 'menu-digital/foods');
+          if (uploadResult && uploadResult.url) {
+            image = uploadResult.url;
+          }
+        } catch (uploadError) {
+          console.error('Cloudinary upload failed:', uploadError.message);
+          // Continue without image if upload fails
         }
-      } else {
-        // Fallback to local storage
-        image = `/uploads/${req.file.filename}`;
       }
     }
 
@@ -106,17 +108,19 @@ export const update = async (req, res) => {
     const { name, description, price, categoriesId } = req.body;
     let image = req.body.image;
 
-    // Handle file upload - try Cloudinary first, fallback to local
-    if (req.file) {
+    // Handle file upload - use buffer from memoryStorage for Vercel
+    if (req.file && req.file.buffer) {
       if (cloudinaryService.isCloudinaryConfigured()) {
-        // Upload to Cloudinary
-        const uploadResult = await cloudinaryService.uploadFromPath(req.file.path, 'menu-digital/foods');
-        if (uploadResult) {
-          image = uploadResult.url;
+        // Upload buffer to Cloudinary
+        try {
+          const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, 'menu-digital/foods');
+          if (uploadResult && uploadResult.url) {
+            image = uploadResult.url;
+          }
+        } catch (uploadError) {
+          console.error('Cloudinary upload failed:', uploadError.message);
+          // Continue with existing image if upload fails
         }
-      } else {
-        // Fallback to local storage
-        image = `/uploads/${req.file.filename}`;
       }
     }
 

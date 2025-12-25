@@ -1,23 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import foodController from '../controllers/food.controller.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `food-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
+// Configure multer for memory storage (Vercel serverless compatible)
+// Files are stored in memory as Buffer and uploaded to Cloudinary
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,

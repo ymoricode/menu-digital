@@ -1,7 +1,8 @@
 import { db } from '../db/index.js';
 import { barcodes, users } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
-import { generateQRCode, generateQRCodeBase64 } from '../utils/qrcode.js';
+import { generateQRCodeBase64 } from '../utils/qrcode.js';
+import * as cloudinaryService from './cloudinary.service.js';
 import 'dotenv/config';
 
 /**
@@ -66,21 +67,37 @@ export const getById = async (id) => {
 
 /**
  * Create new barcode with QR code generation
+ * Uses Cloudinary for serverless compatibility
  */
 export const create = async (data, userId = null) => {
   try {
     // Generate QR value (URL to menu with table number)
-    const qrValue = `${process.env.FRONTEND_URL}/menu?table=${data.tableNumber}`;
-    const filename = `qr-table-${data.tableNumber}-${Date.now()}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://bakso-putra-solo.vercel.app';
+    const qrValue = `${frontendUrl}/menu?table=${data.tableNumber}`;
     
-    // Generate QR code image
-    const qrResult = await generateQRCode(qrValue, filename);
+    // Generate QR code as base64
+    const qrBase64 = await generateQRCodeBase64(qrValue);
+    
+    // Upload to Cloudinary if configured, otherwise use base64 directly
+    let imageUrl = qrBase64; // Default to base64
+    
+    if (cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        const uploadResult = await cloudinaryService.uploadImage(qrBase64, 'menu-digital/qrcodes');
+        if (uploadResult && uploadResult.url) {
+          imageUrl = uploadResult.url;
+        }
+      } catch (uploadError) {
+        console.error('Cloudinary upload failed, using base64:', uploadError.message);
+        // Keep using base64 as fallback
+      }
+    }
 
     const [newBarcode] = await db
       .insert(barcodes)
       .values({
         tableNumber: data.tableNumber,
-        image: qrResult.filePath,
+        image: imageUrl,
         qrValue: qrValue,
         userId: userId,
       })
@@ -88,7 +105,7 @@ export const create = async (data, userId = null) => {
 
     return {
       ...newBarcode,
-      qrBase64: await generateQRCodeBase64(qrValue),
+      qrBase64: qrBase64,
     };
   } catch (error) {
     throw error;
@@ -113,6 +130,7 @@ export const remove = async (id) => {
 
 /**
  * Generate QR code for existing barcode
+ * Uses Cloudinary for serverless compatibility
  */
 export const regenerateQR = async (id) => {
   try {
@@ -121,13 +139,27 @@ export const regenerateQR = async (id) => {
       throw new Error('Barcode not found');
     }
 
-    const filename = `qr-table-${barcode.tableNumber}-${Date.now()}`;
-    const qrResult = await generateQRCode(barcode.qrValue, filename);
+    // Generate QR code as base64
+    const qrBase64 = await generateQRCodeBase64(barcode.qrValue);
+    
+    // Upload to Cloudinary if configured
+    let imageUrl = qrBase64;
+    
+    if (cloudinaryService.isCloudinaryConfigured()) {
+      try {
+        const uploadResult = await cloudinaryService.uploadImage(qrBase64, 'menu-digital/qrcodes');
+        if (uploadResult && uploadResult.url) {
+          imageUrl = uploadResult.url;
+        }
+      } catch (uploadError) {
+        console.error('Cloudinary upload failed, using base64:', uploadError.message);
+      }
+    }
 
     const [updatedBarcode] = await db
       .update(barcodes)
       .set({
-        image: qrResult.filePath,
+        image: imageUrl,
         updatedAt: new Date(),
       })
       .where(eq(barcodes.id, id))
@@ -135,7 +167,7 @@ export const regenerateQR = async (id) => {
 
     return {
       ...updatedBarcode,
-      qrBase64: await generateQRCodeBase64(barcode.qrValue),
+      qrBase64: qrBase64,
     };
   } catch (error) {
     throw error;
