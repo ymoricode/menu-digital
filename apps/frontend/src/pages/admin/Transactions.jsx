@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Receipt, Download, CheckCircle2, Loader2 } from 'lucide-react';
+import { Search, Eye, Receipt, Download, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { transactionsAPI } from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -15,6 +15,7 @@ const Transactions = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [completingId, setCompletingId] = useState(null); // Track which order is being completed
+  const [cancellingId, setCancellingId] = useState(null); // Track which order is being cancelled
 
   useEffect(() => {
     fetchTransactions();
@@ -90,7 +91,7 @@ const Transactions = () => {
       if (response.data.idempotent) {
         toast.success('Pesanan sudah diselesaikan sebelumnya', { icon: 'ℹ️' });
       } else {
-        toast.success('Pesanan berhasil diselesaikan! Meja telah dibebaskan. 🎉');
+        toast.success('Pesanan berhasil diselesaikan! 🎉');
       }
     } catch (error) {
       // Revert optimistic update on failure
@@ -103,6 +104,50 @@ const Transactions = () => {
       toast.error(errorMessage);
     } finally {
       setCompletingId(null);
+    }
+  };
+
+  // ── CANCEL ORDER (with confirmation, idempotent) ──
+  const handleCancelOrder = async (transactionId) => {
+    if (cancellingId === transactionId) return;
+
+    // Confirmation dialog
+    const confirmed = window.confirm('Apakah kamu yakin ingin membatalkan pesanan ini?');
+    if (!confirmed) return;
+
+    setCancellingId(transactionId);
+
+    // Optimistic UI
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.id === transactionId
+          ? { ...t, paymentStatus: 'cancelled' }
+          : t
+      )
+    );
+
+    if (selectedTransaction?.id === transactionId) {
+      setSelectedTransaction((prev) => ({
+        ...prev,
+        paymentStatus: 'cancelled',
+      }));
+    }
+
+    try {
+      const response = await transactionsAPI.cancel(transactionId);
+
+      if (response.data.idempotent) {
+        toast.success('Pesanan sudah dibatalkan sebelumnya', { icon: 'ℹ️' });
+      } else {
+        toast.success('Pesanan berhasil dibatalkan!');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      fetchTransactions();
+      const errorMessage = error.response?.data?.message || 'Gagal membatalkan pesanan';
+      toast.error(errorMessage);
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -156,6 +201,8 @@ const Transactions = () => {
       case 'failed':
       case 'expired':
         return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -173,6 +220,8 @@ const Transactions = () => {
         return 'Gagal';
       case 'expired':
         return 'Expired';
+      case 'cancelled':
+        return 'Dibatalkan';
       default:
         return status;
     }
@@ -225,7 +274,7 @@ const Transactions = () => {
 
             {/* Status Filter */}
             <div className="flex flex-wrap gap-2">
-              {['all', 'paid', 'completed', 'pending', 'expired', 'failed'].map((status) => (
+              {['all', 'paid', 'completed', 'pending', 'cancelled', 'expired', 'failed'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -351,11 +400,38 @@ const Transactions = () => {
                           </button>
                         )}
 
+                        {/* ── Cancel Order Button ── */}
+                        {['pending', 'paid'].includes(transaction.paymentStatus) && (
+                          <button
+                            onClick={() => handleCancelOrder(transaction.id)}
+                            disabled={cancellingId === transaction.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Batalkan Pesanan"
+                          >
+                            {cancellingId === transaction.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <XCircle className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                              {cancellingId === transaction.id ? 'Membatalkan...' : 'Batalkan'}
+                            </span>
+                          </button>
+                        )}
+
                         {/* Show completed badge inline */}
                         {transaction.paymentStatus === 'completed' && (
                           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium">
                             <CheckCircle2 className="w-4 h-4" />
                             <span className="hidden sm:inline">Selesai</span>
+                          </span>
+                        )}
+
+                        {/* Show cancelled badge inline */}
+                        {transaction.paymentStatus === 'cancelled' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg text-sm font-medium">
+                            <XCircle className="w-4 h-4" />
+                            <span className="hidden sm:inline">Dibatalkan</span>
                           </span>
                         )}
                       </div>
@@ -466,23 +542,45 @@ const Transactions = () => {
               </div>
             )}
 
-            {/* ── Complete Button in Modal ── */}
-            {selectedTransaction.paymentStatus === 'paid' && (
-              <div className="border-t pt-4">
+            {/* ── Action Buttons in Modal ── */}
+            {['pending', 'paid'].includes(selectedTransaction.paymentStatus) && (
+              <div className="border-t pt-4 space-y-3">
+                {/* Complete button — only for paid */}
+                {selectedTransaction.paymentStatus === 'paid' && (
+                  <button
+                    onClick={() => handleCompleteOrder(selectedTransaction.id)}
+                    disabled={completingId === selectedTransaction.id}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 px-6 font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
+                  >
+                    {completingId === selectedTransaction.id ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5" />
+                        Selesaikan Pesanan
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Cancel button — for pending & paid */}
                 <button
-                  onClick={() => handleCompleteOrder(selectedTransaction.id)}
-                  disabled={completingId === selectedTransaction.id}
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 px-6 font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
+                  onClick={() => handleCancelOrder(selectedTransaction.id)}
+                  disabled={cancellingId === selectedTransaction.id}
+                  className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl py-3 px-6 font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-red-200"
                 >
-                  {completingId === selectedTransaction.id ? (
+                  {cancellingId === selectedTransaction.id ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Memproses...
+                      Membatalkan...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-5 h-5" />
-                      Selesaikan Pesanan
+                      <XCircle className="w-5 h-5" />
+                      Batalkan Pesanan
                     </>
                   )}
                 </button>
@@ -495,6 +593,16 @@ const Transactions = () => {
                 <div className="flex items-center justify-center gap-2 bg-blue-50 text-blue-700 rounded-xl py-3 px-6">
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-semibold">Pesanan telah diselesaikan</span>
+                </div>
+              </div>
+            )}
+
+            {/* Cancelled info in Modal */}
+            {selectedTransaction.paymentStatus === 'cancelled' && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-center gap-2 bg-orange-50 text-orange-700 rounded-xl py-3 px-6">
+                  <XCircle className="w-5 h-5" />
+                  <span className="font-semibold">Pesanan telah dibatalkan</span>
                 </div>
               </div>
             )}

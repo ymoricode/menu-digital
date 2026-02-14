@@ -40,6 +40,14 @@ export class TransactionNotPaidError extends Error {
   }
 }
 
+export class TransactionCannotCancelError extends Error {
+  constructor(id, currentStatus) {
+    super(`Transaksi ${id} tidak bisa dibatalkan (status: ${currentStatus}).`);
+    this.name = 'TransactionCannotCancelError';
+    this.statusCode = 422;
+  }
+}
+
 // ============================================================
 // GET ALL TRANSACTIONS
 // ============================================================
@@ -595,6 +603,88 @@ export const autoUnlockStaleTables = async () => {
   }
 };
 
+// ============================================================
+// CANCEL TRANSACTION (admin — atomic + idempotent)
+//
+// Concurrency strategy:
+//   1. BEGIN transaction
+//   2. SELECT ... FOR UPDATE on the transaction row
+//   3. If already cancelled → return success (idempotent)
+//   4. If completed → throw error (can't cancel completed)
+//   5. UPDATE transaction: payment_status = 'cancelled'
+//   6. UPDATE barcodes: is_occupied = false, locked_at = NULL
+//   7. COMMIT
+// ============================================================
+export const cancel = async (transactionId) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // ── Step 1: Lock the transaction row ──
+    const txResult = await client.query(
+      'SELECT id, payment_status, completed_at, barcode_id FROM transactions WHERE id = $1 FOR UPDATE',
+      [transactionId]
+    );
+
+    if (txResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      throw new TransactionNotFoundError(transactionId);
+    }
+
+    const tx = txResult.rows[0];
+
+    // ── Step 2: Idempotency — already cancelled ──
+    if (tx.payment_status === 'cancelled') {
+      await client.query('ROLLBACK');
+      return {
+        id: tx.id,
+        alreadyCancelled: true,
+      };
+    }
+
+    // ── Step 3: Validate — can't cancel completed orders ──
+    if (tx.payment_status === 'completed') {
+      await client.query('ROLLBACK');
+      throw new TransactionCannotCancelError(transactionId, tx.payment_status);
+    }
+
+    // ── Step 4: Mark as cancelled ──
+    const updateResult = await client.query(
+      `UPDATE transactions 
+       SET payment_status = 'cancelled', updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [transactionId]
+    );
+
+    // ── Step 5: Release the table ──
+    if (tx.barcode_id) {
+      await client.query(
+        'UPDATE barcodes SET is_occupied = false, locked_at = NULL, updated_at = NOW() WHERE id = $1',
+        [tx.barcode_id]
+      );
+    }
+
+    // ── Step 6: COMMIT ──
+    await client.query('COMMIT');
+
+    return {
+      ...updateResult.rows[0],
+      alreadyCancelled: false,
+    };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Rollback error:', rollbackErr);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -602,6 +692,7 @@ export default {
   checkTableStatus,
   create,
   complete,
+  cancel,
   updatePaymentStatus,
   autoUnlockStaleTables,
 };

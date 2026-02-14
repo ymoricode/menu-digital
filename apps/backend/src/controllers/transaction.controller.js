@@ -3,6 +3,7 @@ import transactionService, {
   TransactionNotFoundError,
   TransactionAlreadyCompletedError,
   TransactionNotPaidError,
+  TransactionCannotCancelError,
 } from '../services/transaction.service.js';
 import xenditService from '../services/xendit.service.js';
 
@@ -165,7 +166,7 @@ export const completeTransaction = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Pesanan berhasil diselesaikan! Meja telah dibebaskan.',
+      message: 'Pesanan berhasil diselesaikan!',
       data: result,
     });
   } catch (error) {
@@ -416,12 +417,70 @@ export const exportToExcel = async (req, res) => {
   }
 };
 
+/**
+ * Cancel transaction (admin)
+ * Idempotent: double-click safe
+ */
+export const cancelTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const transactionId = parseInt(id);
+
+    if (isNaN(transactionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid transaction ID',
+      });
+    }
+
+    const result = await transactionService.cancel(transactionId);
+
+    if (result.alreadyCancelled) {
+      return res.json({
+        success: true,
+        message: 'Pesanan sudah dibatalkan sebelumnya',
+        data: result,
+        idempotent: true,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Pesanan berhasil dibatalkan!',
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof TransactionNotFoundError) {
+      return res.status(404).json({
+        success: false,
+        code: 'TRANSACTION_NOT_FOUND',
+        message: error.message,
+      });
+    }
+
+    if (error instanceof TransactionCannotCancelError) {
+      return res.status(422).json({
+        success: false,
+        code: 'CANNOT_CANCEL',
+        message: error.message,
+      });
+    }
+
+    console.error('Cancel transaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Gagal membatalkan pesanan',
+    });
+  }
+};
+
 export default {
   getAll,
   getById,
   checkTableStatus,
   create,
   completeTransaction,
+  cancelTransaction,
   xenditCallback,
   getByExternalId,
   syncPaymentStatus,

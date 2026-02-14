@@ -14,6 +14,7 @@ router.get('/table-status/:barcodeId', transactionController.checkTableStatus);
 router.get('/', authMiddleware, adminMiddleware, transactionController.getAll);
 router.get('/export', authMiddleware, adminMiddleware, transactionController.exportToExcel);
 router.patch('/:id/complete', authMiddleware, adminMiddleware, transactionController.completeTransaction);
+router.patch('/:id/cancel', authMiddleware, adminMiddleware, transactionController.cancelTransaction);
 router.get('/:id', authMiddleware, adminMiddleware, transactionController.getById);
 
 export default router;
