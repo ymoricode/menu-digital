@@ -137,6 +137,12 @@ export const transactionsAPI = {
   syncPaymentStatus: (externalId) => api.post(`/transactions/sync/${externalId}`),
   create: (data) => api.post('/transactions', data),
   export: () => api.get('/transactions/export', { responseType: 'blob' }),
+
+  // ── NEW: Order completion ──
+  complete: (id) => api.patch(`/transactions/${id}/complete`),
+
+  // ── NEW: Check table status before ordering ──
+  checkTableStatus: (barcodeId) => api.get(`/transactions/table-status/${barcodeId}`),
 };
 
 // ========================

@@ -1,7 +1,7 @@
-import barcodeService from '../services/barcode.service.js';
+import barcodeService from "../services/barcode.service.js";
 
 /**
- * Get all barcodes
+ * Barcodes controller
  */
 export const getAll = async (req, res) => {
   try {
@@ -14,13 +14,13 @@ export const getAll = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get barcodes',
+      message: error.message || "Failed to get barcodes",
     });
   }
 };
 
 /**
- * Get barcode by table number (customer facing)
+ * mengambil barcode berdasarkan nomor meja
  */
 export const getByTableNumber = async (req, res) => {
   try {
@@ -30,7 +30,7 @@ export const getByTableNumber = async (req, res) => {
     if (!barcode) {
       return res.status(404).json({
         success: false,
-        message: 'Barcode not found for this table',
+        message: "Barcode not found for this table",
       });
     }
 
@@ -41,13 +41,13 @@ export const getByTableNumber = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get barcode',
+      message: error.message || "Failed to get barcode",
     });
   }
 };
 
 /**
- * Get barcode by ID
+ * mengambil barcode berdasarkan id
  */
 export const getById = async (req, res) => {
   try {
@@ -57,7 +57,7 @@ export const getById = async (req, res) => {
     if (!barcode) {
       return res.status(404).json({
         success: false,
-        message: 'Barcode not found',
+        message: "Barcode not found",
       });
     }
 
@@ -68,13 +68,13 @@ export const getById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get barcode',
+      message: error.message || "Failed to get barcode",
     });
   }
 };
 
 /**
- * Create new barcode with QR code generation
+ * Menambah barcode baru
  */
 export const create = async (req, res) => {
   try {
@@ -84,16 +84,16 @@ export const create = async (req, res) => {
     if (!tableNumber) {
       return res.status(400).json({
         success: false,
-        message: 'Table number is required',
+        message: "Table number is required",
       });
     }
 
-    // Check if table number already exists
+    // check if barcode for the table number already exists
     const existing = await barcodeService.getByTableNumber(tableNumber);
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'Barcode for this table number already exists',
+        message: "Barcode for this table number already exists",
       });
     }
 
@@ -101,19 +101,19 @@ export const create = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Barcode created successfully',
+      message: "Barcode created successfully",
       data: barcode,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create barcode',
+      message: error.message || "Failed to create barcode",
     });
   }
 };
 
 /**
- * Regenerate QR code for existing barcode
+ * Edit Barcode
  */
 export const regenerate = async (req, res) => {
   try {
@@ -123,19 +123,19 @@ export const regenerate = async (req, res) => {
     if (!barcode) {
       return res.status(404).json({
         success: false,
-        message: 'Barcode not found',
+        message: "Barcode not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'QR code regenerated successfully',
+      message: "QR code regenerated successfully",
       data: barcode,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to regenerate QR code',
+      message: error.message || "Failed to regenerate QR code",
     });
   }
 };
@@ -151,19 +151,19 @@ export const remove = async (req, res) => {
     if (!barcode) {
       return res.status(404).json({
         success: false,
-        message: 'Barcode not found',
+        message: "Barcode not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Barcode deleted successfully',
+      message: "Barcode deleted successfully",
       data: barcode,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to delete barcode',
+      message: error.message || "Failed to delete barcode",
     });
   }
 };

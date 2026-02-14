@@ -1,8 +1,8 @@
-import foodService from '../services/food.service.js';
-import cloudinaryService from '../services/cloudinary.service.js';
+import foodService from "../services/food.service.js";
+import cloudinaryService from "../services/cloudinary.service.js";
 
 /**
- * Get all foods
+ * food controller
  */
 export const getAll = async (req, res) => {
   try {
@@ -15,13 +15,13 @@ export const getAll = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get foods',
+      message: error.message || "Failed to get foods",
     });
   }
 };
 
 /**
- * Get food by ID
+ * mengambil data food berdasarkan id
  */
 export const getById = async (req, res) => {
   try {
@@ -31,7 +31,7 @@ export const getById = async (req, res) => {
     if (!food) {
       return res.status(404).json({
         success: false,
-        message: 'Food not found',
+        message: "Food not found",
       });
     }
 
@@ -42,13 +42,13 @@ export const getById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get food',
+      message: error.message || "Failed to get food",
     });
   }
 };
 
 /**
- * Create new food
+ * tambah food
  */
 export const create = async (req, res) => {
   try {
@@ -58,15 +58,16 @@ export const create = async (req, res) => {
     // Handle file upload - use buffer from memoryStorage for Vercel
     if (req.file && req.file.buffer) {
       if (cloudinaryService.isCloudinaryConfigured()) {
-        // Upload buffer to Cloudinary
         try {
-          const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, 'menu-digital/foods');
+          const uploadResult = await cloudinaryService.uploadImage(
+            req.file.buffer,
+            "menu-digital/foods"
+          );
           if (uploadResult && uploadResult.url) {
             image = uploadResult.url;
           }
         } catch (uploadError) {
-          console.error('Cloudinary upload failed:', uploadError.message);
-          // Continue without image if upload fails
+          console.error("Cloudinary upload failed:", uploadError.message);
         }
       }
     }
@@ -74,7 +75,7 @@ export const create = async (req, res) => {
     if (!name || !price) {
       return res.status(400).json({
         success: false,
-        message: 'Name and price are required',
+        message: "Name and price are required",
       });
     }
 
@@ -88,13 +89,13 @@ export const create = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Food created successfully',
+      message: "Food created successfully",
       data: food,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create food',
+      message: error.message || "Failed to create food",
     });
   }
 };
@@ -113,12 +114,15 @@ export const update = async (req, res) => {
       if (cloudinaryService.isCloudinaryConfigured()) {
         // Upload buffer to Cloudinary
         try {
-          const uploadResult = await cloudinaryService.uploadImage(req.file.buffer, 'menu-digital/foods');
+          const uploadResult = await cloudinaryService.uploadImage(
+            req.file.buffer,
+            "menu-digital/foods"
+          );
           if (uploadResult && uploadResult.url) {
             image = uploadResult.url;
           }
         } catch (uploadError) {
-          console.error('Cloudinary upload failed:', uploadError.message);
+          console.error("Cloudinary upload failed:", uploadError.message);
           // Continue with existing image if upload fails
         }
       }
@@ -135,19 +139,19 @@ export const update = async (req, res) => {
     if (!food) {
       return res.status(404).json({
         success: false,
-        message: 'Food not found',
+        message: "Food not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Food updated successfully',
+      message: "Food updated successfully",
       data: food,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update food',
+      message: error.message || "Failed to update food",
     });
   }
 };
@@ -163,19 +167,19 @@ export const remove = async (req, res) => {
     if (!food) {
       return res.status(404).json({
         success: false,
-        message: 'Food not found',
+        message: "Food not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Food deleted successfully',
+      message: "Food deleted successfully",
       data: food,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to delete food',
+      message: error.message || "Failed to delete food",
     });
   }
 };

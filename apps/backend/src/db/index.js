@@ -11,4 +11,7 @@ const pool = new Pool({
 
 export const db = drizzle(pool, { schema });
 
+// Export pool for raw SQL transactions (FOR UPDATE row locking)
+export { pool };
+
 export default db;

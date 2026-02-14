@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Receipt, Download } from 'lucide-react';
+import { Search, Eye, Receipt, Download, CheckCircle2, Loader2 } from 'lucide-react';
 import { transactionsAPI } from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -14,6 +14,7 @@ const Transactions = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [completingId, setCompletingId] = useState(null); // Track which order is being completed
 
   useEffect(() => {
     fetchTransactions();
@@ -55,6 +56,53 @@ const Transactions = () => {
       toast.error('Gagal export data');
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ── COMPLETE ORDER (idempotent, double-click safe) ──
+  const handleCompleteOrder = async (transactionId) => {
+    // Prevent double-click: if already completing this ID, bail out
+    if (completingId === transactionId) return;
+    
+    setCompletingId(transactionId);
+
+    // Optimistic UI: immediately update list
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.id === transactionId
+          ? { ...t, paymentStatus: 'completed', completedAt: new Date().toISOString() }
+          : t
+      )
+    );
+
+    // Also update the detail modal if it's showing this transaction
+    if (selectedTransaction?.id === transactionId) {
+      setSelectedTransaction((prev) => ({
+        ...prev,
+        paymentStatus: 'completed',
+        completedAt: new Date().toISOString(),
+      }));
+    }
+
+    try {
+      const response = await transactionsAPI.complete(transactionId);
+
+      if (response.data.idempotent) {
+        toast.success('Pesanan sudah diselesaikan sebelumnya', { icon: 'ℹ️' });
+      } else {
+        toast.success('Pesanan berhasil diselesaikan! Meja telah dibebaskan. 🎉');
+      }
+    } catch (error) {
+      // Revert optimistic update on failure
+      console.error('Error completing order:', error);
+      
+      // Refetch to get the actual state
+      fetchTransactions();
+      
+      const errorMessage = error.response?.data?.message || 'Gagal menyelesaikan pesanan';
+      toast.error(errorMessage);
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -101,6 +149,8 @@ const Transactions = () => {
     switch (status) {
       case 'paid':
         return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'failed':
@@ -115,6 +165,8 @@ const Transactions = () => {
     switch (status) {
       case 'paid':
         return 'Lunas';
+      case 'completed':
+        return 'Selesai';
       case 'pending':
         return 'Pending';
       case 'failed':
@@ -172,8 +224,8 @@ const Transactions = () => {
             </div>
 
             {/* Status Filter */}
-            <div className="flex space-x-2">
-              {['all', 'paid', 'pending', 'failed'].map((status) => (
+            <div className="flex flex-wrap gap-2">
+              {['all', 'paid', 'completed', 'pending', 'expired', 'failed'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -271,7 +323,7 @@ const Transactions = () => {
                       {formatDate(transaction.createdAt)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
                         <button
                           onClick={() => viewDetail(transaction)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -279,6 +331,33 @@ const Transactions = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+
+                        {/* ── Complete Order Button ── */}
+                        {transaction.paymentStatus === 'paid' && (
+                          <button
+                            onClick={() => handleCompleteOrder(transaction.id)}
+                            disabled={completingId === transaction.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Selesaikan Pesanan"
+                          >
+                            {completingId === transaction.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">
+                              {completingId === transaction.id ? 'Memproses...' : 'Selesaikan'}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Show completed badge inline */}
+                        {transaction.paymentStatus === 'completed' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Selesai</span>
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -328,6 +407,12 @@ const Transactions = () => {
                 <p className="text-sm text-gray-500">Tanggal</p>
                 <p className="font-medium">{formatDate(selectedTransaction.createdAt)}</p>
               </div>
+              {selectedTransaction.completedAt && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">Diselesaikan Pada</p>
+                  <p className="font-medium text-blue-600">{formatDate(selectedTransaction.completedAt)}</p>
+                </div>
+              )}
             </div>
 
             {/* Items */}
@@ -378,6 +463,39 @@ const Transactions = () => {
                     <strong>External ID:</strong> {selectedTransaction.externalId}
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* ── Complete Button in Modal ── */}
+            {selectedTransaction.paymentStatus === 'paid' && (
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => handleCompleteOrder(selectedTransaction.id)}
+                  disabled={completingId === selectedTransaction.id}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 px-6 font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
+                >
+                  {completingId === selectedTransaction.id ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      Selesaikan Pesanan
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Completed info in Modal */}
+            {selectedTransaction.paymentStatus === 'completed' && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-center gap-2 bg-blue-50 text-blue-700 rounded-xl py-3 px-6">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-semibold">Pesanan telah diselesaikan</span>
+                </div>
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
-import dashboardService from '../services/dashboard.service.js';
+import dashboardService from "../services/dashboard.service.js";
 
 /**
- * Get dashboard summary
+ * Dashboard controller
  */
 export const getSummary = async (req, res) => {
   try {
@@ -14,13 +14,13 @@ export const getSummary = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get summary',
+      message: error.message || "Failed to get summary",
     });
   }
 };
 
 /**
- * Get top selling products
+ * mengambil data produk terlaris
  */
 export const getTopProducts = async (req, res) => {
   try {
@@ -36,13 +36,13 @@ export const getTopProducts = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get top products',
+      message: error.message || "Failed to get top products",
     });
   }
 };
 
 /**
- * Get monthly income data
+ * mengambil data pemasukan bulanan
  */
 export const getMonthlyIncome = async (req, res) => {
   try {
@@ -58,13 +58,13 @@ export const getMonthlyIncome = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get monthly income',
+      message: error.message || "Failed to get monthly income",
     });
   }
 };
 
 /**
- * Get weekly income data
+ * mengambil data pemasukan mingguan
  */
 export const getWeeklyIncome = async (req, res) => {
   try {
@@ -77,13 +77,13 @@ export const getWeeklyIncome = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get weekly income',
+      message: error.message || "Failed to get weekly income",
     });
   }
 };
 
 /**
- * Get recent transactions
+ * mengambil data transaksi terbaru
  */
 export const getRecentTransactions = async (req, res) => {
   try {
@@ -99,7 +99,7 @@ export const getRecentTransactions = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get recent transactions',
+      message: error.message || "Failed to get recent transactions",
     });
   }
 };

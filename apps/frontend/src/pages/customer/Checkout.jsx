@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Phone, CreditCard, Shield, Lock, Utensils } from 'lucide-react';
+import { ArrowLeft, User, Phone, CreditCard, Shield, Lock, Utensils, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { transactionsAPI, barcodesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -10,12 +10,57 @@ const Checkout = () => {
   const { items, tableNumber, getTotalPrice, clearCart } = useCart();
   
   const [loading, setLoading] = useState(false);
+  const [checkingTable, setCheckingTable] = useState(false);
+  const [tableOccupied, setTableOccupied] = useState(false);
+  const [barcodeId, setBarcodeId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
   });
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
+
+  // ── Check table status on mount ──
+  useEffect(() => {
+    if (tableNumber) {
+      checkTableAvailability();
+    }
+  }, [tableNumber]);
+
+  const checkTableAvailability = async () => {
+    if (!tableNumber) return;
+
+    setCheckingTable(true);
+    try {
+      // First, get barcodeId by table number
+      const barcodeRes = await barcodesAPI.getByTableNumber(tableNumber);
+      const barcode = barcodeRes.data.data;
+      
+      if (!barcode) {
+        setCheckingTable(false);
+        return;
+      }
+
+      setBarcodeId(barcode.id);
+
+      // Then check if the table is occupied
+      const statusRes = await transactionsAPI.checkTableStatus(barcode.id);
+      const status = statusRes.data.data;
+
+      if (status.isOccupied) {
+        setTableOccupied(true);
+      } else {
+        setTableOccupied(false);
+      }
+    } catch (error) {
+      console.error('Error checking table status:', error);
+      // Don't block checkout on status-check failure — let the backend's
+      // FOR UPDATE lock handle it as the ultimate guard
+      setTableOccupied(false);
+    } finally {
+      setCheckingTable(false);
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('id-ID', {
@@ -49,14 +94,21 @@ const Checkout = () => {
       return;
     }
 
+    // Double-check: prevent submit if table is known to be occupied
+    if (tableOccupied) {
+      toast.error('Meja sedang digunakan. Silakan tunggu.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      let barcodeId = null;
-      if (tableNumber) {
+      // Resolve barcodeId if not already set
+      let resolvedBarcodeId = barcodeId;
+      if (tableNumber && !resolvedBarcodeId) {
         try {
           const barcodeRes = await barcodesAPI.getByTableNumber(tableNumber);
-          barcodeId = barcodeRes.data.data?.id;
+          resolvedBarcodeId = barcodeRes.data.data?.id;
         } catch (error) {
           console.error('Barcode not found for table:', tableNumber);
         }
@@ -65,7 +117,7 @@ const Checkout = () => {
       const transactionData = {
         name: formData.name,
         phone: formData.phone,
-        barcodeId,
+        barcodeId: resolvedBarcodeId,
         items: items.map((item) => ({
           foodsId: item.id,
           name: item.name,
@@ -88,7 +140,15 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error(error.response?.data?.message || 'Gagal melakukan checkout');
+
+      // ── Handle TABLE_OCCUPIED from backend (409 Conflict) ──
+      if (error.response?.status === 409 && error.response?.data?.code === 'TABLE_OCCUPIED') {
+        setTableOccupied(true);
+        toast.error('Meja sedang digunakan oleh pesanan lain');
+      } else {
+        toast.error(error.response?.data?.message || 'Gagal melakukan checkout');
+      }
+      
       setLoading(false);
     }
   };
@@ -120,6 +180,77 @@ const Checkout = () => {
     }
     focus:outline-none
   `;
+
+  // ── TABLE OCCUPIED BLOCKING UI ──
+  if (tableOccupied) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white rounded-3xl p-8 shadow-xl">
+            {/* Warning Icon */}
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-10 h-10 text-amber-500" />
+            </div>
+
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">
+              ⚠️ Meja Sedang Digunakan
+            </h1>
+
+            <p className="text-gray-500 mb-2 text-lg">
+              Meja <span className="font-bold text-orange-500">{tableNumber}</span> sedang diproses untuk pesanan lain.
+            </p>
+
+            <p className="text-gray-400 mb-8 text-sm">
+              Silakan tunggu sampai pesanan sebelumnya selesai, atau hubungi kasir untuk bantuan.
+            </p>
+
+            {/* Retry Button */}
+            <button
+              onClick={() => {
+                setTableOccupied(false);
+                checkTableAvailability();
+              }}
+              disabled={checkingTable}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl py-4 font-bold text-base shadow-lg shadow-orange-200 disabled:opacity-50 active:scale-[0.98] transition-all mb-4"
+            >
+              {checkingTable ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Memeriksa...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-5 h-5" />
+                  Cek Ulang Ketersediaan
+                </>
+              )}
+            </button>
+
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 rounded-2xl py-4 font-semibold text-base hover:bg-gray-200 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Kembali
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading state while checking table ──
+  if (checkingTable) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">Memeriksa ketersediaan meja...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -259,7 +390,7 @@ const Checkout = () => {
           
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || tableOccupied}
             className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl py-5 font-bold text-lg shadow-xl shadow-orange-200 disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98] transition-all flex items-center justify-center gap-3"
           >
             {loading ? (

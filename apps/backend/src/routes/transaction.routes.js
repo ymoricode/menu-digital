@@ -8,10 +8,12 @@ const router = Router();
 router.post('/', transactionController.create);
 router.get('/status/:external_id', transactionController.getByExternalId);
 router.post('/sync/:external_id', transactionController.syncPaymentStatus);
+router.get('/table-status/:barcodeId', transactionController.checkTableStatus);
 
 // Protected routes (admin)
 router.get('/', authMiddleware, adminMiddleware, transactionController.getAll);
 router.get('/export', authMiddleware, adminMiddleware, transactionController.exportToExcel);
+router.patch('/:id/complete', authMiddleware, adminMiddleware, transactionController.completeTransaction);
 router.get('/:id', authMiddleware, adminMiddleware, transactionController.getById);
 
 export default router;

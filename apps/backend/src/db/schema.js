@@ -5,6 +5,7 @@ import {
   text,
   integer,
   timestamp,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -57,6 +58,8 @@ export const barcodes = pgTable('barcodes', {
   userId: integer('user_id').references(() => users.id, {
     onDelete: 'set null',
   }),
+  isOccupied: boolean('is_occupied').default(false).notNull(),
+  lockedAt: timestamp('locked_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -77,6 +80,7 @@ export const transactions = pgTable('transactions', {
   paymentMethod: varchar('payment_method', { length: 50 }),
   paymentStatus: varchar('payment_status', { length: 20 }).default('pending'),
   total: integer('total'),
+  completedAt: timestamp('completed_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

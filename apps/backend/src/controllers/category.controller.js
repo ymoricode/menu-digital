@@ -1,7 +1,7 @@
-import categoryService from '../services/category.service.js';
+import categoryService from "../services/category.service.js";
 
 /**
- * Get all categories
+ * categories controller
  */
 export const getAll = async (req, res) => {
   try {
@@ -14,13 +14,13 @@ export const getAll = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get categories',
+      message: error.message || "Failed to get categories",
     });
   }
 };
 
 /**
- * Get category by ID
+ * mengambil category berdasarkan id
  */
 export const getById = async (req, res) => {
   try {
@@ -30,7 +30,7 @@ export const getById = async (req, res) => {
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found',
+        message: "Category not found",
       });
     }
 
@@ -41,13 +41,13 @@ export const getById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get category',
+      message: error.message || "Failed to get category",
     });
   }
 };
 
 /**
- * Create new category
+ * tambah category
  */
 export const create = async (req, res) => {
   try {
@@ -56,7 +56,7 @@ export const create = async (req, res) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Category name is required',
+        message: "Category name is required",
       });
     }
 
@@ -64,19 +64,19 @@ export const create = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Category created successfully',
+      message: "Category created successfully",
       data: category,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create category',
+      message: error.message || "Failed to create category",
     });
   }
 };
 
 /**
- * Update category
+ * edit category
  */
 export const update = async (req, res) => {
   try {
@@ -86,7 +86,7 @@ export const update = async (req, res) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Category name is required',
+        message: "Category name is required",
       });
     }
 
@@ -95,19 +95,19 @@ export const update = async (req, res) => {
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found',
+        message: "Category not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Category updated successfully',
+      message: "Category updated successfully",
       data: category,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update category',
+      message: error.message || "Failed to update category",
     });
   }
 };
@@ -123,19 +123,19 @@ export const remove = async (req, res) => {
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found',
+        message: "Category not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Category deleted successfully',
+      message: "Category deleted successfully",
       data: category,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to delete category',
+      message: error.message || "Failed to delete category",
     });
   }
 };

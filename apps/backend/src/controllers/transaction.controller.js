@@ -1,4 +1,9 @@
-import transactionService from '../services/transaction.service.js';
+import transactionService, {
+  TableOccupiedError,
+  TransactionNotFoundError,
+  TransactionAlreadyCompletedError,
+  TransactionNotPaidError,
+} from '../services/transaction.service.js';
 import xenditService from '../services/xendit.service.js';
 
 /**
@@ -48,7 +53,36 @@ export const getById = async (req, res) => {
 };
 
 /**
+ * Check table status (customer — before ordering)
+ */
+export const checkTableStatus = async (req, res) => {
+  try {
+    const { barcodeId } = req.params;
+
+    if (!barcodeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'barcodeId is required',
+      });
+    }
+
+    const status = await transactionService.checkTableStatus(parseInt(barcodeId));
+
+    res.json({
+      success: true,
+      data: status,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to check table status',
+    });
+  }
+};
+
+/**
  * Create new transaction (customer checkout)
+ * Handles table locking — returns 409 if table occupied
  */
 export const create = async (req, res) => {
   try {
@@ -85,9 +119,85 @@ export const create = async (req, res) => {
       data: transaction,
     });
   } catch (error) {
+    // ── Typed error handling ──
+    if (error instanceof TableOccupiedError) {
+      return res.status(409).json({
+        success: false,
+        code: 'TABLE_OCCUPIED',
+        message: error.message,
+      });
+    }
+
+    console.error('Create transaction error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to create transaction',
+    });
+  }
+};
+
+/**
+ * Complete transaction (admin — mark as delivered)
+ * Idempotent: double-click safe
+ */
+export const completeTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const transactionId = parseInt(id);
+
+    if (isNaN(transactionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid transaction ID',
+      });
+    }
+
+    const result = await transactionService.complete(transactionId);
+
+    if (result.alreadyCompleted) {
+      return res.json({
+        success: true,
+        message: 'Pesanan sudah diselesaikan sebelumnya',
+        data: result,
+        idempotent: true,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Pesanan berhasil diselesaikan! Meja telah dibebaskan.',
+      data: result,
+    });
+  } catch (error) {
+    // ── Typed error handling ──
+    if (error instanceof TransactionNotFoundError) {
+      return res.status(404).json({
+        success: false,
+        code: 'TRANSACTION_NOT_FOUND',
+        message: error.message,
+      });
+    }
+
+    if (error instanceof TransactionNotPaidError) {
+      return res.status(422).json({
+        success: false,
+        code: 'TRANSACTION_NOT_PAID',
+        message: error.message,
+      });
+    }
+
+    if (error instanceof TransactionAlreadyCompletedError) {
+      return res.status(409).json({
+        success: false,
+        code: 'ALREADY_COMPLETED',
+        message: error.message,
+      });
+    }
+
+    console.error('Complete transaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Gagal menyelesaikan pesanan',
     });
   }
 };
@@ -151,11 +261,11 @@ export const syncPaymentStatus = async (req, res) => {
       });
     }
     
-    // If already paid, no need to check
-    if (transaction.paymentStatus === 'paid') {
+    // If already paid or completed, no need to check
+    if (['paid', 'completed'].includes(transaction.paymentStatus)) {
       return res.json({
         success: true,
-        message: 'Transaction already paid',
+        message: `Transaction already ${transaction.paymentStatus}`,
         data: transaction,
       });
     }
@@ -251,8 +361,13 @@ export const exportToExcel = async (req, res) => {
       'Total': t.total,
       'Status Pembayaran': t.paymentStatus === 'paid' ? 'Lunas' : 
                           t.paymentStatus === 'pending' ? 'Menunggu' :
-                          t.paymentStatus === 'expired' ? 'Kadaluarsa' : 'Gagal',
+                          t.paymentStatus === 'expired' ? 'Kadaluarsa' :
+                          t.paymentStatus === 'completed' ? 'Selesai' : 'Gagal',
       'Metode Pembayaran': t.paymentMethod || '-',
+      'Selesai Pada': t.completedAt ? new Date(t.completedAt).toLocaleString('id-ID', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
+      }) : '-',
       'Tanggal': new Date(t.createdAt).toLocaleString('id-ID', {
         day: '2-digit',
         month: '2-digit', 
@@ -278,6 +393,7 @@ export const exportToExcel = async (req, res) => {
       { wch: 15 },  // Total
       { wch: 15 },  // Status
       { wch: 15 },  // Metode
+      { wch: 20 },  // Selesai Pada
       { wch: 20 },  // Tanggal
     ];
 
@@ -303,7 +419,9 @@ export const exportToExcel = async (req, res) => {
 export default {
   getAll,
   getById,
+  checkTableStatus,
   create,
+  completeTransaction,
   xenditCallback,
   getByExternalId,
   syncPaymentStatus,

@@ -1,4 +1,4 @@
-import authService from '../services/auth.service.js';
+import authService from "../services/auth.service.js";
 
 /**
  * Login controller
@@ -10,7 +10,7 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: "Email and password are required",
       });
     }
 
@@ -18,37 +18,34 @@ export const login = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: result,
     });
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: error.message || 'Login failed',
+      message: error.message || "Login failed",
     });
   }
 };
 
-/**
- * Logout controller (client-side token removal)
- */
 export const logout = async (req, res) => {
   try {
-    // JWT tokens are stateless, logout is handled client-side
+    // JWT tokens
     res.json({
       success: true,
-      message: 'Logout successful',
+      message: "Logout successful",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Logout failed',
+      message: error.message || "Logout failed",
     });
   }
 };
 
 /**
- * Get current user profile
+ * Mengambil data admin ketika login
  */
 export const getProfile = async (req, res) => {
   try {
@@ -57,7 +54,7 @@ export const getProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
@@ -68,13 +65,13 @@ export const getProfile = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get profile',
+      message: error.message || "Failed to get profile",
     });
   }
 };
 
 /**
- * Register new admin user
+ * Register admin
  */
 export const register = async (req, res) => {
   try {
@@ -83,7 +80,7 @@ export const register = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required',
+        message: "Name, email, and password are required",
       });
     }
 
@@ -91,13 +88,13 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
+      message: "Registration successful",
       data: result,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message || 'Registration failed',
+      message: error.message || "Registration failed",
     });
   }
 };
