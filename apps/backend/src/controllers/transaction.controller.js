@@ -6,6 +6,7 @@ import transactionService, {
   TransactionCannotCancelError,
 } from '../services/transaction.service.js';
 import xenditService from '../services/xendit.service.js';
+import notificationService from '../services/notification.service.js';
 
 /**
  * Get all transactions (admin)
@@ -112,6 +113,15 @@ export const create = async (req, res) => {
       email,
       items,
       barcodeId,
+    });
+
+    // ── Emit realtime notification to admin ──
+    notificationService.notifyNewTransaction({
+      id: transaction.id,
+      code: transaction.code,
+      name: name,
+      total: transaction.total || 0,
+      tableNumber: transaction.tableNumber || null,
     });
 
     res.status(201).json({
@@ -221,13 +231,27 @@ export const xenditCallback = async (req, res) => {
     const { external_id, status, payment_method } = req.body;
 
     if (status === 'PAID') {
-      await transactionService.updatePaymentStatus(
+      const updated = await transactionService.updatePaymentStatus(
         external_id,
         'paid',
         payment_method
       );
+      // ── Emit payment received notification ──
+      if (updated) {
+        notificationService.notifyPaymentReceived({
+          id: updated.id,
+          code: updated.code,
+          total: updated.total,
+        });
+      }
     } else if (status === 'EXPIRED') {
-      await transactionService.updatePaymentStatus(external_id, 'expired');
+      const updated = await transactionService.updatePaymentStatus(external_id, 'expired');
+      if (updated) {
+        notificationService.notifyPaymentExpired({
+          id: updated.id,
+          code: updated.code,
+        });
+      }
     } else if (status === 'FAILED') {
       await transactionService.updatePaymentStatus(external_id, 'failed');
     }

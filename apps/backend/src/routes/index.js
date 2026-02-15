@@ -7,6 +7,7 @@ import barcodeRoutes from './barcode.routes.js';
 import transactionRoutes from './transaction.routes.js';
 import paymentRoutes from './payment.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use('/barcode', barcodeRoutes); // Alias for /barcode/:table_number
 router.use('/transactions', transactionRoutes);
 router.use('/payment', paymentRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/notifications', notificationRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
