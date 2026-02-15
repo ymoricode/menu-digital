@@ -163,12 +163,12 @@ const Products = () => {
   }));
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Products</h1>
-          <p className="text-white/35 text-sm font-medium">Kelola menu makanan dan minuman</p>
+          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+          <p className="text-gray-500">Kelola menu makanan dan minuman</p>
         </div>
         <Button onClick={openCreateModal}>
           <Plus className="w-4 h-4 mr-2" />
@@ -180,13 +180,13 @@ const Products = () => {
       <Card>
         <Card.Body className="py-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari produk..."
-              className="input pl-10"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </Card.Body>
@@ -194,45 +194,45 @@ const Products = () => {
 
       {/* Products Table */}
       <Card>
-        <div className="overflow-x-auto scrollbar-dark">
+        <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b border-white/[0.06]">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Produk
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Kategori
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Harga
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Aksi
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
                     <td className="px-6 py-4" colSpan={4}>
-                      <div className="shimmer h-12" />
+                      <div className="animate-pulse h-12 bg-gray-200 rounded" />
                     </td>
                   </tr>
                 ))
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-12 text-center text-white/30" colSpan={4}>
+                  <td className="px-6 py-12 text-center text-gray-500" colSpan={4}>
                     Tidak ada produk ditemukan
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="w-12 h-12 bg-white/[0.06] rounded-xl flex-shrink-0 overflow-hidden border border-white/[0.06]">
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                           {product.image ? (
                             <img
                               src={getImageUrl(product.image)}
@@ -241,13 +241,13 @@ const Products = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <ChefHat className="w-5 h-5 text-white/15" />
+                              <ChefHat className="w-6 h-6 text-gray-300" />
                             </div>
                           )}
                         </div>
                         <div className="ml-4">
-                          <p className="font-semibold text-white/85">{product.name}</p>
-                          <p className="text-xs text-white/30 line-clamp-1">
+                          <p className="font-medium text-gray-900">{product.name}</p>
+                          <p className="text-sm text-gray-500 line-clamp-1">
                             {product.description}
                           </p>
                         </div>
@@ -255,27 +255,27 @@ const Products = () => {
                     </td>
                     <td className="px-6 py-4">
                       {product.categoryName ? (
-                        <span className="px-2.5 py-1 bg-primary-500/10 text-primary-400 text-xs font-semibold rounded-lg border border-primary-500/15">
+                        <span className="px-2 py-1 bg-primary-50 text-primary-700 text-sm rounded-full">
                           {product.categoryName}
                         </span>
                       ) : (
-                        <span className="text-white/20">-</span>
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-bold text-white/80">
+                    <td className="px-6 py-4 font-medium text-gray-900">
                       {formatPrice(product.price)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex justify-end space-x-1">
+                      <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => openEditModal(product)}
-                          className="p-2 text-accent-400 hover:bg-accent-400/10 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => openDeleteModal(product)}
-                          className="p-2 text-danger-400 hover:bg-danger-400/10 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -299,9 +299,11 @@ const Products = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Image Upload */}
           <div>
-            <label className="label">Gambar Produk</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Gambar Produk
+            </label>
             <div className="flex items-center gap-4">
-              <div className="w-24 h-24 bg-white/[0.06] rounded-xl overflow-hidden flex-shrink-0 border border-white/[0.08]">
+              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 {imagePreview ? (
                   <img
                     src={imagePreview}
@@ -310,7 +312,7 @@ const Products = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <ChefHat className="w-10 h-10 text-white/10" />
+                    <ChefHat className="w-10 h-10 text-gray-300" />
                   </div>
                 )}
               </div>
@@ -324,11 +326,11 @@ const Products = () => {
                 />
                 <label
                   htmlFor="image-upload"
-                  className="btn-outline px-4 py-2.5 text-sm rounded-xl cursor-pointer inline-block"
+                  className="btn btn-outline cursor-pointer"
                 >
                   Pilih Gambar
                 </label>
-                <p className="text-xs text-white/25 mt-1.5">PNG, JPG max 5MB</p>
+                <p className="text-xs text-gray-500 mt-1">PNG, JPG max 5MB</p>
               </div>
             </div>
           </div>
@@ -391,12 +393,12 @@ const Products = () => {
         size="sm"
       >
         <div className="text-center">
-          <div className="w-16 h-16 bg-danger-500/15 rounded-full mx-auto flex items-center justify-center mb-4">
-            <Trash2 className="w-8 h-8 text-danger-400" />
+          <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-500" />
           </div>
-          <p className="text-white/60 mb-6">
+          <p className="text-gray-600 mb-6">
             Apakah Anda yakin ingin menghapus produk{' '}
-            <strong className="text-white/90">{selectedProduct?.name}</strong>?
+            <strong>{selectedProduct?.name}</strong>?
           </p>
           <div className="flex justify-center space-x-3">
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>

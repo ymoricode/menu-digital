@@ -116,12 +116,12 @@ const Categories = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Categories</h1>
-          <p className="text-white/35 text-sm font-medium">Kelola kategori menu</p>
+          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
+          <p className="text-gray-500">Kelola kategori menu</p>
         </div>
         <Button onClick={openCreateModal}>
           <Plus className="w-4 h-4 mr-2" />
@@ -133,13 +133,13 @@ const Categories = () => {
       <Card>
         <Card.Body className="py-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kategori..."
-              className="input pl-10"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </Card.Body>
@@ -149,29 +149,29 @@ const Categories = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="shimmer h-[100px]" />
+            <div key={i} className="h-32 bg-gray-200 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : filteredCategories.length === 0 ? (
         <Card>
           <Card.Body className="py-12 text-center">
-            <Tags className="w-12 h-12 text-white/10 mx-auto mb-4" />
-            <p className="text-white/30">Tidak ada kategori ditemukan</p>
+            <Tags className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Tidak ada kategori ditemukan</p>
           </Card.Body>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCategories.map((category) => (
-            <Card key={category.id}>
+            <Card key={category.id} className="hover:shadow-md transition-shadow">
               <Card.Body>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-11 h-11 bg-primary-500/15 rounded-xl flex items-center justify-center border border-primary-500/10">
-                      <Tags className="w-5 h-5 text-primary-400" />
+                    <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <Tags className="w-6 h-6 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white/85">{category.name}</h3>
-                      <p className="text-xs text-white/25">
+                      <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                      <p className="text-sm text-gray-500">
                         {formatDate(category.createdAt)}
                       </p>
                     </div>
@@ -179,13 +179,13 @@ const Categories = () => {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => openEditModal(category)}
-                      className="p-2 text-accent-400 hover:bg-accent-400/10 rounded-lg transition-colors"
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => openDeleteModal(category)}
-                      className="p-2 text-danger-400 hover:bg-danger-400/10 rounded-lg transition-colors"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -236,14 +236,14 @@ const Categories = () => {
         size="sm"
       >
         <div className="text-center">
-          <div className="w-16 h-16 bg-danger-500/15 rounded-full mx-auto flex items-center justify-center mb-4">
-            <Trash2 className="w-8 h-8 text-danger-400" />
+          <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-500" />
           </div>
-          <p className="text-white/60 mb-2">
+          <p className="text-gray-600 mb-2">
             Apakah Anda yakin ingin menghapus kategori{' '}
-            <strong className="text-white/90">{selectedCategory?.name}</strong>?
+            <strong>{selectedCategory?.name}</strong>?
           </p>
-          <p className="text-sm text-danger-400 mb-6">
+          <p className="text-sm text-red-500 mb-6">
             Semua produk dalam kategori ini akan ikut terhapus!
           </p>
           <div className="flex justify-center space-x-3">

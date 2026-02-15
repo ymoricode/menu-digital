@@ -610,9 +610,10 @@ export const autoUnlockStaleTables = async () => {
 //   1. BEGIN transaction
 //   2. SELECT ... FOR UPDATE on the transaction row
 //   3. If already cancelled → return success (idempotent)
-//   4. UPDATE transaction: payment_status = 'cancelled'
-//   5. UPDATE barcodes: is_occupied = false, locked_at = NULL
-//   6. COMMIT
+//   4. If completed → throw error (can't cancel completed)
+//   5. UPDATE transaction: payment_status = 'cancelled'
+//   6. UPDATE barcodes: is_occupied = false, locked_at = NULL
+//   7. COMMIT
 // ============================================================
 export const cancel = async (transactionId) => {
   const client = await pool.connect();
@@ -642,10 +643,16 @@ export const cancel = async (transactionId) => {
       };
     }
 
-    // ── Step 3: Mark as cancelled ──
+    // ── Step 3: Validate — can't cancel completed orders ──
+    if (tx.payment_status === 'completed') {
+      await client.query('ROLLBACK');
+      throw new TransactionCannotCancelError(transactionId, tx.payment_status);
+    }
+
+    // ── Step 4: Mark as cancelled ──
     const updateResult = await client.query(
       `UPDATE transactions 
-       SET payment_status = 'cancelled', completed_at = NULL, updated_at = NOW()
+       SET payment_status = 'cancelled', updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [transactionId]

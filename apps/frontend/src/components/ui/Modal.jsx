@@ -11,6 +11,7 @@ const Modal = ({
 }) => {
   const modalRef = useRef(null);
 
+  // Close on escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -29,6 +30,7 @@ const Modal = ({
     };
   }, [isOpen, onClose]);
 
+  // Close on backdrop click
   const handleBackdropClick = (e) => {
     if (modalRef.current && !modalRef.current.contains(e.target)) {
       onClose();
@@ -48,23 +50,23 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in"
       onClick={handleBackdropClick}
     >
       <div
         ref={modalRef}
-        className={`w-full ${sizes[size]} glass-surface !border-white/[0.1] shadow-glass-lg animate-scale-in`}
+        className={`w-full ${sizes[size]} bg-white rounded-xl shadow-xl animate-scale-in`}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             {title && (
-              <h3 className="text-lg font-bold text-white/90">{title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1.5 text-white/30 hover:text-white/60 transition-colors rounded-lg hover:bg-white/[0.06]"
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
               </button>

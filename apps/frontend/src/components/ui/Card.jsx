@@ -1,7 +1,7 @@
-const Card = ({ children, className = '', hover = true, ...props }) => {
+const Card = ({ children, className = '', ...props }) => {
   return (
     <div
-      className={`glass-card ${hover ? '' : '!bg-[var(--color-glass)] hover:!bg-[var(--color-glass)]'} ${className}`}
+      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden ${className}`}
       {...props}
     >
       {children}
@@ -12,7 +12,7 @@ const Card = ({ children, className = '', hover = true, ...props }) => {
 const CardHeader = ({ children, className = '', ...props }) => {
   return (
     <div
-      className={`px-6 py-4 border-b border-white/[0.06] ${className}`}
+      className={`px-6 py-4 border-b border-gray-100 ${className}`}
       {...props}
     >
       {children}
@@ -31,7 +31,7 @@ const CardBody = ({ children, className = '', ...props }) => {
 const CardFooter = ({ children, className = '', ...props }) => {
   return (
     <div
-      className={`px-6 py-4 border-t border-white/[0.06] bg-white/[0.02] ${className}`}
+      className={`px-6 py-4 border-t border-gray-100 bg-gray-50 ${className}`}
       {...props}
     >
       {children}

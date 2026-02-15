@@ -48,94 +48,62 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   return (
-    <aside
-      className={`fixed inset-y-0 left-0 z-30 w-[260px] flex flex-col
-        bg-surface-200/80 backdrop-blur-xl border-r border-white/[0.06]
-        transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+    <>
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-    >
-      {/* ── Brand ── */}
-      <div className="flex items-center justify-between h-[72px] px-6">
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-glow-sm">
-            <ChefHat className="w-5 h-5 text-white" />
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-primary-500">
+              <ChefHat className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900">Menu Digital</span>
           </div>
-          <div>
-            <span className="text-[15px] font-bold text-white tracking-tight">
-              Menu Digital
-            </span>
-            <span className="block text-[10px] font-medium text-white/30 uppercase tracking-[0.15em]">
-              Admin Panel
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded-lg lg:hidden transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* ── Divider ── */}
-      <div className="mx-5 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-
-      {/* ── Navigation ── */}
-      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto scrollbar-hide">
-        {menuItems.map((item, index) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
+          <button
             onClick={onClose}
-            style={{ animationDelay: `${index * 50}ms` }}
-            className={({ isActive }) =>
-              `group flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-300 animate-slide-right ${
-                isActive
-                  ? 'bg-primary-500/15 text-primary-400 shadow-[inset_0_0_0_1px_rgba(236,117,28,0.15)]'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
-              }`
-            }
+            className="p-1 text-gray-400 hover:text-gray-600 lg:hidden"
           >
-            {({ isActive }) => (
-              <>
-                <div
-                  className={`p-1.5 rounded-lg transition-all duration-300 ${
-                    isActive
-                      ? 'bg-primary-500/20 text-primary-400'
-                      : 'text-white/40 group-hover:text-white/60'
-                  }`}
-                >
-                  <item.icon className="w-[18px] h-[18px]" />
-                </div>
-                <span>{item.name}</span>
-                {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-400 shadow-glow-sm" />
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-      {/* ── Divider ── */}
-      <div className="mx-5 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="font-medium">{item.name}</span>
+            </NavLink>
+          ))}
+        </nav>
 
-      {/* ── Logout ── */}
-      <div className="p-3">
-        <button
-          onClick={handleLogout}
-          className="flex items-center w-full gap-3 px-4 py-3 rounded-xl text-[14px] font-medium
-            text-white/40 hover:text-danger-400 hover:bg-danger-500/10
-            transition-all duration-300 group"
-        >
-          <div className="p-1.5 rounded-lg text-white/30 group-hover:text-danger-400 transition-colors">
-            <LogOut className="w-[18px] h-[18px]" />
-          </div>
-          <span>Logout</span>
-        </button>
-      </div>
-    </aside>
+        {/* Logout */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full px-4 py-3 space-x-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 
