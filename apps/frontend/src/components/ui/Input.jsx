@@ -14,22 +14,16 @@ const Input = forwardRef(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-          </label>
+          <label className="label">{label}</label>
         )}
         <input
           ref={ref}
           type={type}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-            error
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-primary-500'
-          } ${className}`}
+          className={`input ${error ? 'input-error' : ''} ${className}`}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-red-500">{error}</p>
+          <p className="mt-1.5 text-sm text-danger-400">{error}</p>
         )}
       </div>
     );
@@ -52,22 +46,16 @@ export const Textarea = forwardRef(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-          </label>
+          <label className="label">{label}</label>
         )}
         <textarea
           ref={ref}
           rows={rows}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 resize-none ${
-            error
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-primary-500'
-          } ${className}`}
+          className={`input resize-none ${error ? 'input-error' : ''} ${className}`}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-red-500">{error}</p>
+          <p className="mt-1.5 text-sm text-danger-400">{error}</p>
         )}
       </div>
     );
@@ -91,28 +79,22 @@ export const Select = forwardRef(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-          </label>
+          <label className="label">{label}</label>
         )}
         <select
           ref={ref}
-          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-            error
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-primary-500'
-          } ${className}`}
+          className={`input ${error ? 'input-error' : ''} ${className}`}
           {...props}
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="bg-surface-200 text-white">
               {option.label}
             </option>
           ))}
         </select>
         {error && (
-          <p className="mt-1 text-sm text-red-500">{error}</p>
+          <p className="mt-1.5 text-sm text-danger-400">{error}</p>
         )}
       </div>
     );
