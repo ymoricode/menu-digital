@@ -138,14 +138,17 @@ export const transactionsAPI = {
   create: (data) => api.post('/transactions', data),
   export: () => api.get('/transactions/export', { responseType: 'blob' }),
 
-  // ── NEW: Order completion ──
+  // ── Order completion ──
   complete: (id) => api.patch(`/transactions/${id}/complete`),
 
-  // ── NEW: Cancel order ──
+  // ── Cancel order ──
   cancel: (id) => api.patch(`/transactions/${id}/cancel`),
 
-  // ── NEW: Check table status before ordering ──
+  // ── Check table status before ordering ──
   checkTableStatus: (barcodeId) => api.get(`/transactions/table-status/${barcodeId}`),
+
+  // ── Check payment status (lightweight, DB-only polling) ──
+  checkPaymentStatus: (transactionId) => api.get(`/payment/status/${transactionId}`),
 };
 
 // ========================

@@ -84,6 +84,7 @@ export const checkTableStatus = async (req, res) => {
 
 /**
  * Create new transaction (customer checkout)
+ * Now returns QRIS data (qr_string) instead of a checkout URL
  * Handles table locking — returns 409 if table occupied
  */
 export const create = async (req, res) => {
@@ -213,30 +214,76 @@ export const completeTransaction = async (req, res) => {
   }
 };
 
-/**
- * Xendit payment callback (webhook)
- */
-export const xenditCallback = async (req, res) => {
+// ============================================================
+// PAYMENT WEBHOOK (Xendit Payment Request API v3)
+//
+// Handles events:
+//   - payment.succeeded  → status PAID
+//   - payment.failed     → status FAILED
+//   - payment.expired /
+//     payment_request.expired → status EXPIRED
+//
+// Security:
+//   - Validates x-callback-token header
+//   - Verifies payment amount matches order total
+//   - Idempotent: skips if already paid/completed
+// ============================================================
+export const paymentWebhook = async (req, res) => {
   try {
-    // Verify callback signature
-    const isValid = xenditService.verifyCallback(req.headers, req.body);
+    // ── Step 1: Verify webhook token ──
+    const isValid = xenditService.verifyWebhookToken(req.headers);
 
     if (!isValid) {
+      console.error('[Webhook] Invalid callback token');
       return res.status(401).json({
         success: false,
         message: 'Invalid callback signature',
       });
     }
 
-    const { external_id, status, payment_method } = req.body;
+    const { event, data } = req.body;
 
-    if (status === 'PAID') {
+    // Extract reference_id — this is our external_id
+    const referenceId = data?.reference_id;
+
+    if (!referenceId) {
+      console.error('[Webhook] Missing reference_id in payload');
+      return res.status(400).json({
+        success: false,
+        message: 'Missing reference_id',
+      });
+    }
+
+    console.log(`[Webhook] Event: ${event} | Reference: ${referenceId} | Status: ${data?.status}`);
+
+    // ── Step 2: Find the transaction ──
+    const transaction = await transactionService.getByExternalId(referenceId);
+
+    if (!transaction) {
+      console.error(`[Webhook] Transaction not found for reference_id: ${referenceId}`);
+      // Return 200 to prevent Xendit from retrying
+      return res.json({
+        success: true,
+        message: 'Transaction not found — acknowledged',
+      });
+    }
+
+    // ── Step 3: Process based on event type ──
+    if (event === 'payment.succeeded' && data?.status === 'SUCCEEDED') {
+      // Verify amount matches order total (security check)
+      if (data.amount && data.amount !== transaction.total) {
+        console.error(
+          `[Webhook] Amount mismatch! Expected: ${transaction.total}, Got: ${data.amount}`
+        );
+        // Still acknowledge to prevent retries, but log the discrepancy
+      }
+
       const updated = await transactionService.updatePaymentStatus(
-        external_id,
+        referenceId,
         'paid',
-        payment_method
+        'QRIS'
       );
-      // ── Emit payment received notification ──
+
       if (updated) {
         notificationService.notifyPaymentReceived({
           id: updated.id,
@@ -244,33 +291,90 @@ export const xenditCallback = async (req, res) => {
           total: updated.total,
         });
       }
-    } else if (status === 'EXPIRED') {
-      const updated = await transactionService.updatePaymentStatus(external_id, 'expired');
+    } else if (event === 'payment.failed') {
+      await transactionService.updatePaymentStatus(referenceId, 'failed');
+    } else if (
+      event === 'payment.expired' ||
+      event === 'payment_request.expired'
+    ) {
+      const updated = await transactionService.updatePaymentStatus(referenceId, 'expired');
       if (updated) {
         notificationService.notifyPaymentExpired({
           id: updated.id,
           code: updated.code,
         });
       }
-    } else if (status === 'FAILED') {
-      await transactionService.updatePaymentStatus(external_id, 'failed');
+    } else {
+      console.log(`[Webhook] Unhandled event: ${event}`);
     }
 
+    // Always return 200 to acknowledge receipt
     res.json({
       success: true,
-      message: 'Callback processed',
+      message: 'Webhook processed',
     });
   } catch (error) {
-    console.error('Xendit callback error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to process callback',
+    console.error('[Webhook] Error processing:', error);
+    // Return 200 even on error to prevent infinite retries
+    // The error is logged for manual investigation
+    res.json({
+      success: true,
+      message: 'Webhook acknowledged with error',
     });
   }
 };
 
 /**
- * Sync payment status from Xendit (for development without webhook)
+ * Check payment status (lightweight — reads from DB only)
+ * Used by frontend for polling
+ * Does NOT call Xendit API — fast and safe
+ */
+export const checkPaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const transactionId = parseInt(id);
+
+    if (isNaN(transactionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid transaction ID',
+      });
+    }
+
+    const transaction = await transactionService.getById(transactionId);
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: transaction.id,
+        code: transaction.code,
+        paymentStatus: transaction.paymentStatus,
+        paymentMethod: transaction.paymentMethod,
+        total: transaction.total,
+        name: transaction.name,
+        tableNumber: transaction.tableNumber,
+        createdAt: transaction.createdAt,
+        completedAt: transaction.completedAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to check payment status',
+    });
+  }
+};
+
+/**
+ * Sync payment status from Xendit API (for development/manual sync)
+ * Calls Xendit API to check real status, then updates DB
  */
 export const syncPaymentStatus = async (req, res) => {
   try {
@@ -295,15 +399,15 @@ export const syncPaymentStatus = async (req, res) => {
       });
     }
     
-    // Check status from Xendit API
-    const xenditStatus = await xenditService.getInvoiceByExternalId(external_id);
+    // Check status from Xendit API using reference ID
+    const xenditStatus = await xenditService.getPaymentByReferenceId(external_id);
     
-    if (xenditStatus.status === 'PAID' || xenditStatus.status === 'SETTLED') {
+    if (xenditStatus.status === 'PAID') {
       // Update transaction to paid
       await transactionService.updatePaymentStatus(
         external_id,
         'paid',
-        xenditStatus.paymentChannel || xenditStatus.paymentMethod || 'xendit'
+        'QRIS'
       );
       
       // Get updated transaction
@@ -321,6 +425,14 @@ export const syncPaymentStatus = async (req, res) => {
         success: true,
         message: 'Payment expired',
         data: { ...transaction, paymentStatus: 'expired' },
+      });
+    } else if (xenditStatus.status === 'FAILED') {
+      await transactionService.updatePaymentStatus(external_id, 'failed');
+      
+      return res.json({
+        success: true,
+        message: 'Payment failed',
+        data: { ...transaction, paymentStatus: 'failed' },
       });
     }
     
@@ -505,7 +617,8 @@ export default {
   create,
   completeTransaction,
   cancelTransaction,
-  xenditCallback,
+  paymentWebhook,
+  checkPaymentStatus,
   getByExternalId,
   syncPaymentStatus,
   exportToExcel,

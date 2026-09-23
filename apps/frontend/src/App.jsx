@@ -7,6 +7,7 @@ import MenuDetail from './pages/customer/MenuDetail';
 import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
 import PaymentResult from './pages/customer/PaymentResult';
+import QRISPayment from './pages/customer/QRISPayment';
 
 // Admin Pages
 import Login from './pages/admin/Login';
@@ -37,6 +38,7 @@ function App() {
       <Route path="/menu/:id" element={<MenuDetail />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/checkout" element={<Checkout />} />
+      <Route path="/payment/qris" element={<QRISPayment />} />
       <Route path="/payment/success" element={<PaymentResult status="success" />} />
       <Route path="/payment/failed" element={<PaymentResult status="failed" />} />
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Phone, CreditCard, Shield, Lock, Utensils, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, Phone, Shield, Lock, Utensils, AlertTriangle, RefreshCw, QrCode, Smartphone } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { transactionsAPI, barcodesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -127,17 +127,15 @@ const Checkout = () => {
       };
 
       const response = await transactionsAPI.create(transactionData);
-      const { checkoutLink, externalId } = response.data.data;
+      const transaction = response.data.data;
 
-      localStorage.setItem('lastExternalId', externalId);
+      localStorage.setItem('lastExternalId', transaction.externalId || transaction.external_id);
       clearCart();
 
-      if (checkoutLink) {
-        window.location.href = checkoutLink;
-      } else {
-        toast.error('Gagal mendapatkan link pembayaran');
-        setLoading(false);
-      }
+      // Navigate to QRIS payment page with transaction data
+      navigate('/payment/qris', {
+        state: { transaction },
+      });
     } catch (error) {
       console.error('Checkout error:', error);
 
@@ -356,20 +354,26 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* Payment Method Info */}
+        {/* Payment Method Info — QRIS Only */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <CreditCard className="w-6 h-6 text-white" />
+              <QrCode className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-800">Xendit Payment</h3>
-              <p className="text-sm text-gray-500">Berbagai metode pembayaran</p>
+              <h3 className="font-bold text-gray-800">Pembayaran QRIS</h3>
+              <p className="text-sm text-gray-500">Scan QR untuk membayar</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Shield className="w-4 h-4 text-green-500" />
-            <span>Pembayaran aman & terenkripsi</span>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Smartphone className="w-4 h-4 text-blue-500" />
+              <span>GoPay • DANA • OVO • ShopeePay • Mobile Banking</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Shield className="w-4 h-4 text-green-500" />
+              <span>Pembayaran aman & terenkripsi</span>
+            </div>
           </div>
         </div>
       </div>
@@ -400,8 +404,8 @@ const Checkout = () => {
               </>
             ) : (
               <>
-                <CreditCard className="w-6 h-6" />
-                <span>Bayar Sekarang</span>
+                <QrCode className="w-6 h-6" />
+                <span>Bayar dengan QRIS</span>
               </>
             )}
           </button>

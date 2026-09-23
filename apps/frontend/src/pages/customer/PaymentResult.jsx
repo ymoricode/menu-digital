@@ -205,15 +205,13 @@ const PaymentResult = () => {
               </div>
 
               <div className="space-y-3 w-full max-w-sm">
-                {transaction?.checkoutLink && (
-                  <a
-                    href={transaction.checkoutLink}
-                    className="w-full bg-white text-orange-600 font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
-                  >
-                    Lanjutkan Pembayaran
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
-                )}
+                <button
+                  onClick={() => navigate('/menu')}
+                  className="w-full bg-white text-orange-600 font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
+                >
+                  Pesan Lagi
+                  <ArrowRight className="w-5 h-5" />
+                </button>
                 <button
                   onClick={() => navigate('/')}
                   className="w-full bg-white/20 text-white font-bold py-4 rounded-2xl backdrop-blur-sm"

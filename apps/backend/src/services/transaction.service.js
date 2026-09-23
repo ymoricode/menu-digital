@@ -265,12 +265,11 @@ export const create = async (data) => {
       return { ...item, subtotal };
     });
 
-    // ── Step 5: Create Xendit invoice ──
-    const xenditResult = await xenditService.createInvoice({
+    // ── Step 5: Create QRIS payment via Xendit Payment Request API v3 ──
+    const qrisResult = await xenditService.createQRISPayment({
       code: transactionCode,
       name: data.name,
       phone: data.phone,
-      email: data.email,
       total,
       items: itemsWithSubtotal.map((item) => ({
         name: item.name,
@@ -280,6 +279,8 @@ export const create = async (data) => {
     });
 
     // ── Step 6: Insert transaction row ──
+    // checkout_link stores QRIS qr_string (used by frontend to render QR code)
+    // external_id stores our reference_id for webhook matching
     const insertTxResult = await client.query(
       `INSERT INTO transactions 
         (code, name, phone, external_id, checkout_link, barcode_id, payment_method, payment_status, total, created_at, updated_at)
@@ -289,10 +290,10 @@ export const create = async (data) => {
         transactionCode,
         data.name,
         data.phone,
-        xenditResult.externalId,
-        xenditResult.invoiceUrl,
+        qrisResult.externalId,
+        qrisResult.qrString,         // QRIS data stored in checkout_link
         data.barcodeId || null,
-        'xendit',
+        'QRIS',                       // Payment method: QRIS
         'pending',
         total,
       ]
@@ -315,8 +316,10 @@ export const create = async (data) => {
 
     return {
       ...newTransaction,
-      externalId: xenditResult.externalId,
-      checkoutLink: xenditResult.invoiceUrl,
+      externalId: qrisResult.externalId,
+      qrString: qrisResult.qrString,
+      paymentRequestId: qrisResult.paymentRequestId,
+      expiresAt: qrisResult.expiresAt,
       items: itemsWithSubtotal,
     };
   } catch (error) {
