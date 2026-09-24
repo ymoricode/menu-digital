@@ -8,7 +8,7 @@ A full-stack web application designed for restaurants and cafes to provide a sea
 - **QR Code Integration**: Generate QR codes for tables and scan them to initiate orders.
 - **Order Management**: Real-time order tracking and management.
 - **QRIS Payment**: Customers pay by scanning a QRIS QR code displayed directly in the app, using any supported payment app (GoPay, DANA, OVO, ShopeePay, Mobile Banking, etc.).
-- **Payment Verification**: Payments are verified via webhook and backend API — never trusted from frontend.
+- **Payment Verification**: Payments are verified via Midtrans webhook and backend API — never trusted from frontend.
 - **Image Uploads**: Cloudinary integration for menu item images.
 - **Authentication & Security**: JWT-based authentication for admin and staff.
 - **Analytics & Reports**: Visual charts for sales data and Excel (xlsx) export capabilities.
@@ -16,13 +16,16 @@ A full-stack web application designed for restaurants and cafes to provide a sea
 
 ## 💳 Payment System
 
-### QRIS Only
+### Payment: QRIS
+### Payment Provider: Midtrans
+
 The payment system uses **QRIS** as the only available payment method. Customers see a QR code displayed inline in the app after checkout.
 
 **Payment Flow:**
 ```
-Customer → Digital Menu → Cart → Checkout → QRIS QR Code → 
-Customer scans with any payment app → Payment verified via webhook → 
+Customer → Digital Menu → Cart → Checkout → QRIS QR Code →
+Customer scans with any payment app → Midtrans verifies payment →
+Payment Notification (webhook) → Backend verification →
 Order status = PAID → Customer sees success
 ```
 
@@ -31,7 +34,11 @@ Order status = PAID → Customer sees success
 - Mobile Banking (BCA, BRI, Mandiri, BNI, etc.)
 - Any app that supports QRIS
 
-**Payment Provider:** Xendit (Payment Request API v3) processes the QRIS payment. Xendit is not visible to customers — they only see "Pembayaran QRIS".
+**Security:**
+- Payment status is only set via Midtrans webhook notification or backend API verification
+- Webhook signature validated via SHA512
+- Payment amount verified against order total
+- Idempotent processing prevents duplicate payments
 
 ## 💻 Tech Stack
 
@@ -53,7 +60,7 @@ This project is structured as a monorepo using **npm workspaces**, containing tw
 - **Framework**: Express.js
 - **Database & ORM**: PostgreSQL with Drizzle ORM (`drizzle-kit`)
 - **Authentication**: JWT (`jsonwebtoken`), Password Hashing (`bcryptjs`)
-- **Payment Provider**: Xendit — QRIS via Payment Request API v3
+- **Payment Provider**: Midtrans — QRIS via Core API v2
 - **File Uploads**: Cloudinary & Multer
 - **Utilities**: `qrcode`, `uuid`, `xlsx` (for Excel reports)
 
@@ -63,7 +70,7 @@ Make sure you have the following installed on your machine:
 - [Node.js](https://nodejs.org/) (v18.0.0 or higher)
 - [PostgreSQL](https://www.postgresql.org/)
 - A [Cloudinary](https://cloudinary.com/) account (for image hosting)
-- A [Xendit](https://www.xendit.co/) account (for QRIS payments)
+- A [Midtrans](https://midtrans.com/) account (for QRIS payments)
 
 ## ⚙️ Installation & Setup
 
@@ -93,11 +100,12 @@ Make sure you have the following installed on your machine:
    JWT_SECRET=your-jwt-secret
    JWT_EXPIRES_IN=7d
 
-   # Xendit (QRIS Payment)
-   XENDIT_SECRET_KEY=xnd_development_your_key
-   XENDIT_WEBHOOK_TOKEN=your_webhook_verification_token
+   # Midtrans (QRIS Payment)
+   MIDTRANS_SERVER_KEY=SB-Mid-server-your_key
+   MIDTRANS_CLIENT_KEY=SB-Mid-client-your_key
+   MIDTRANS_IS_PRODUCTION=false
 
-   # Frontend URL (for webhook redirects)
+   # Frontend URL
    FRONTEND_URL=http://localhost:5173
 
    # Cloudinary
@@ -106,9 +114,14 @@ Make sure you have the following installed on your machine:
    CLOUDINARY_API_SECRET=your_api_secret
    ```
 
-   > **Note:** Activate QRIS in your Xendit Dashboard under **Configuration > Payment Methods** before processing live payments.
+   > **Note:** Get your Midtrans Server Key and Client Key from [Midtrans Dashboard](https://dashboard.midtrans.com/) → Settings → Access Keys. Use Sandbox keys for development.
 
-4. **Database Setup:**
+4. **Midtrans Webhook Configuration:**
+   In your Midtrans Dashboard → Settings → Configuration:
+   - Set **Payment Notification URL** to: `https://your-domain.com/api/payment/webhook`
+   - Enable **GoPay** payment channel (required for QRIS)
+
+5. **Database Setup:**
    Run the following commands from the root directory to generate and push the database schema using Drizzle ORM:
    ```bash
    npm run db:generate

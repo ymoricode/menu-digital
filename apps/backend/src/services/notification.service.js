@@ -58,7 +58,7 @@ class NotificationService {
   }
 
   /**
-   * Send notification when a payment is confirmed (PAID via Xendit)
+   * Send notification when a payment is confirmed (PAID via Midtrans)
    */
   notifyPaymentReceived(transaction) {
     this.broadcast('payment_received', {

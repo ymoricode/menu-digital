@@ -2,7 +2,7 @@ import { db, pool } from '../db/index.js';
 import { transactions, transactionItems, foods, barcodes } from '../db/schema.js';
 import { eq, desc, and, inArray, lt, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import xenditService from './xendit.service.js';
+import midtransService from './midtrans.service.js';
 
 // ============================================================
 // Custom Error Classes (typed errors for controller layer)
@@ -265,13 +265,14 @@ export const create = async (data) => {
       return { ...item, subtotal };
     });
 
-    // ── Step 5: Create QRIS payment via Xendit Payment Request API v3 ──
-    const qrisResult = await xenditService.createQRISPayment({
-      code: transactionCode,
+    // ── Step 5: Create QRIS payment via Midtrans Core API v2 ──
+    const qrisResult = await midtransService.createQRISPayment({
+      orderId: transactionCode,
+      total,
       name: data.name,
       phone: data.phone,
-      total,
       items: itemsWithSubtotal.map((item) => ({
+        foodsId: item.foodsId,
         name: item.name,
         quantity: item.quantity,
         price: item.price,
@@ -279,8 +280,8 @@ export const create = async (data) => {
     });
 
     // ── Step 6: Insert transaction row ──
-    // checkout_link stores QRIS qr_string (used by frontend to render QR code)
-    // external_id stores our reference_id for webhook matching
+    // external_id stores Midtrans order_id (same as transactionCode) for webhook matching
+    // checkout_link stores QR code URL or qr_string from Midtrans
     const insertTxResult = await client.query(
       `INSERT INTO transactions 
         (code, name, phone, external_id, checkout_link, barcode_id, payment_method, payment_status, total, created_at, updated_at)
@@ -290,8 +291,8 @@ export const create = async (data) => {
         transactionCode,
         data.name,
         data.phone,
-        qrisResult.externalId,
-        qrisResult.qrString,         // QRIS data stored in checkout_link
+        qrisResult.orderId,
+        qrisResult.qrCodeUrl || qrisResult.qrString,  // QR code URL or string
         data.barcodeId || null,
         'QRIS',                       // Payment method: QRIS
         'pending',
@@ -316,14 +317,15 @@ export const create = async (data) => {
 
     return {
       ...newTransaction,
-      externalId: qrisResult.externalId,
+      externalId: qrisResult.orderId,
+      qrCodeUrl: qrisResult.qrCodeUrl,
       qrString: qrisResult.qrString,
-      paymentRequestId: qrisResult.paymentRequestId,
+      transactionId: qrisResult.transactionId,
       expiresAt: qrisResult.expiresAt,
       items: itemsWithSubtotal,
     };
   } catch (error) {
-    // Rollback on any error (including Xendit failures)
+    // Rollback on any error (including Midtrans failures)
     try {
       await client.query('ROLLBACK');
     } catch (rollbackErr) {
@@ -420,7 +422,7 @@ export const complete = async (transactionId) => {
 };
 
 // ============================================================
-// UPDATE PAYMENT STATUS (from Xendit webhook)
+// UPDATE PAYMENT STATUS (from Midtrans webhook)
 // Now also handles table unlocking for expired/failed payments
 // ============================================================
 export const updatePaymentStatus = async (externalId, status, paymentMethod = null) => {

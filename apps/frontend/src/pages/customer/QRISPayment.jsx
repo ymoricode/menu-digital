@@ -135,7 +135,7 @@ const QRISPayment = () => {
     setChecking(true);
     
     try {
-      // Use sync endpoint (calls Xendit API) for manual check
+      // Use sync endpoint (calls Midtrans API) for manual check
       const response = await transactionsAPI.syncPaymentStatus(transaction.external_id || transaction.externalId);
       const data = response.data.data;
 
@@ -171,7 +171,8 @@ const QRISPayment = () => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Get QR string from transaction data
+  // Get QR data from transaction
+  const qrCodeUrl = transaction?.qrCodeUrl || transaction?.qr_code_url;
   const qrString = transaction?.qrString || transaction?.checkout_link || transaction?.checkoutLink;
 
   // ── LOADING STATE ──
@@ -404,8 +405,20 @@ const QRISPayment = () => {
               <div className="h-px flex-1 bg-gray-200" />
             </div>
 
-            {/* QR Code */}
-            {qrString ? (
+            {/* QR Code — prefer Midtrans image URL, fallback to qrcode.react */}
+            {qrCodeUrl ? (
+              <div className="p-4 bg-white rounded-2xl border-2 border-gray-100 shadow-inner">
+                <img
+                  src={qrCodeUrl}
+                  alt="QRIS QR Code"
+                  className="w-60 h-60 object-contain"
+                  onError={(e) => {
+                    // If image fails, hide it (qrString fallback below)
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : qrString ? (
               <div className="p-4 bg-white rounded-2xl border-2 border-gray-100 shadow-inner">
                 <QRCodeSVG
                   value={qrString}

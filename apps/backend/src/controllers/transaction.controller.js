@@ -5,7 +5,7 @@ import transactionService, {
   TransactionNotPaidError,
   TransactionCannotCancelError,
 } from '../services/transaction.service.js';
-import xenditService from '../services/xendit.service.js';
+import midtransService from '../services/midtrans.service.js';
 import notificationService from '../services/notification.service.js';
 
 /**
@@ -215,111 +215,118 @@ export const completeTransaction = async (req, res) => {
 };
 
 // ============================================================
-// PAYMENT WEBHOOK (Xendit Payment Request API v3)
+// PAYMENT WEBHOOK (Midtrans Payment Notification)
 //
-// Handles events:
-//   - payment.succeeded  → status PAID
-//   - payment.failed     → status FAILED
-//   - payment.expired /
-//     payment_request.expired → status EXPIRED
+// Midtrans sends POST with transaction status:
+//   - settlement / capture  → status PAID
+//   - expire                → status EXPIRED
+//   - cancel                → status CANCELLED
+//   - deny / failure        → status FAILED
 //
 // Security:
-//   - Validates x-callback-token header
+//   - Validates signature_key via SHA512
 //   - Verifies payment amount matches order total
 //   - Idempotent: skips if already paid/completed
 // ============================================================
 export const paymentWebhook = async (req, res) => {
   try {
-    // ── Step 1: Verify webhook token ──
-    const isValid = xenditService.verifyWebhookToken(req.headers);
+    const notification = req.body;
+
+    // ── Step 1: Verify signature ──
+    const isValid = midtransService.verifySignature(notification);
 
     if (!isValid) {
-      console.error('[Webhook] Invalid callback token');
+      console.error('[Webhook] Invalid Midtrans signature');
       return res.status(401).json({
         success: false,
-        message: 'Invalid callback signature',
+        message: 'Invalid signature',
       });
     }
 
-    const { event, data } = req.body;
+    const { order_id, transaction_status, gross_amount, fraud_status } = notification;
 
-    // Extract reference_id — this is our external_id
-    const referenceId = data?.reference_id;
-
-    if (!referenceId) {
-      console.error('[Webhook] Missing reference_id in payload');
+    if (!order_id) {
+      console.error('[Webhook] Missing order_id in notification');
       return res.status(400).json({
         success: false,
-        message: 'Missing reference_id',
+        message: 'Missing order_id',
       });
     }
 
-    console.log(`[Webhook] Event: ${event} | Reference: ${referenceId} | Status: ${data?.status}`);
+    console.log(`[Webhook] Order: ${order_id} | Status: ${transaction_status} | Fraud: ${fraud_status || 'N/A'}`);
 
     // ── Step 2: Find the transaction ──
-    const transaction = await transactionService.getByExternalId(referenceId);
+    // In our system, external_id = order_id = transaction code
+    const transaction = await transactionService.getByExternalId(order_id);
 
     if (!transaction) {
-      console.error(`[Webhook] Transaction not found for reference_id: ${referenceId}`);
-      // Return 200 to prevent Xendit from retrying
-      return res.json({
+      console.error(`[Webhook] Transaction not found for order_id: ${order_id}`);
+      // Return 200 to prevent Midtrans from retrying
+      return res.status(200).json({
         success: true,
         message: 'Transaction not found — acknowledged',
       });
     }
 
-    // ── Step 3: Process based on event type ──
-    if (event === 'payment.succeeded' && data?.status === 'SUCCEEDED') {
+    // ── Step 3: Map Midtrans status to our status ──
+    const newStatus = midtransService.mapStatus(transaction_status);
+
+    // ── Step 4: Process based on status ──
+    if (newStatus === 'paid') {
       // Verify amount matches order total (security check)
-      if (data.amount && data.amount !== transaction.total) {
+      const webhookAmount = parseInt(gross_amount) || 0;
+      if (webhookAmount && webhookAmount !== transaction.total) {
         console.error(
-          `[Webhook] Amount mismatch! Expected: ${transaction.total}, Got: ${data.amount}`
+          `[Webhook] Amount mismatch! Expected: ${transaction.total}, Got: ${webhookAmount}`
         );
-        // Still acknowledge to prevent retries, but log the discrepancy
       }
 
-      const updated = await transactionService.updatePaymentStatus(
-        referenceId,
-        'paid',
-        'QRIS'
-      );
+      // Check fraud_status for card payments (QRIS usually doesn’t have this)
+      if (fraud_status && fraud_status !== 'accept') {
+        console.warn(`[Webhook] Fraud status: ${fraud_status} for order ${order_id}`);
+        await transactionService.updatePaymentStatus(order_id, 'failed');
+      } else {
+        const updated = await transactionService.updatePaymentStatus(
+          order_id,
+          'paid',
+          'QRIS'
+        );
 
-      if (updated) {
-        notificationService.notifyPaymentReceived({
-          id: updated.id,
-          code: updated.code,
-          total: updated.total,
-        });
+        if (updated) {
+          notificationService.notifyPaymentReceived({
+            id: updated.id,
+            code: updated.code,
+            total: updated.total,
+          });
+        }
       }
-    } else if (event === 'payment.failed') {
-      await transactionService.updatePaymentStatus(referenceId, 'failed');
-    } else if (
-      event === 'payment.expired' ||
-      event === 'payment_request.expired'
-    ) {
-      const updated = await transactionService.updatePaymentStatus(referenceId, 'expired');
+    } else if (newStatus === 'expired') {
+      const updated = await transactionService.updatePaymentStatus(order_id, 'expired');
       if (updated) {
         notificationService.notifyPaymentExpired({
           id: updated.id,
           code: updated.code,
         });
       }
+    } else if (newStatus === 'cancelled') {
+      await transactionService.updatePaymentStatus(order_id, 'cancelled');
+    } else if (newStatus === 'failed') {
+      await transactionService.updatePaymentStatus(order_id, 'failed');
     } else {
-      console.log(`[Webhook] Unhandled event: ${event}`);
+      console.log(`[Webhook] Status pending/unchanged for order: ${order_id}`);
     }
 
     // Always return 200 to acknowledge receipt
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Webhook processed',
+      message: 'Notification processed',
     });
   } catch (error) {
     console.error('[Webhook] Error processing:', error);
     // Return 200 even on error to prevent infinite retries
-    // The error is logged for manual investigation
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Webhook acknowledged with error',
+      message: 'Notification acknowledged with error',
     });
   }
 };
@@ -327,7 +334,7 @@ export const paymentWebhook = async (req, res) => {
 /**
  * Check payment status (lightweight — reads from DB only)
  * Used by frontend for polling
- * Does NOT call Xendit API — fast and safe
+ * Does NOT call Midtrans API — fast and safe
  */
 export const checkPaymentStatus = async (req, res) => {
   try {
@@ -373,8 +380,8 @@ export const checkPaymentStatus = async (req, res) => {
 };
 
 /**
- * Sync payment status from Xendit API (for development/manual sync)
- * Calls Xendit API to check real status, then updates DB
+ * Sync payment status from Midtrans API (for manual sync / "Cek Status" button)
+ * Calls Midtrans Status API to check real status, then updates DB
  */
 export const syncPaymentStatus = async (req, res) => {
   try {
@@ -399,18 +406,11 @@ export const syncPaymentStatus = async (req, res) => {
       });
     }
     
-    // Check status from Xendit API using reference ID
-    const xenditStatus = await xenditService.getPaymentByReferenceId(external_id);
+    // Check status from Midtrans API using order_id
+    const midtransStatus = await midtransService.getTransactionStatus(external_id);
     
-    if (xenditStatus.status === 'PAID') {
-      // Update transaction to paid
-      await transactionService.updatePaymentStatus(
-        external_id,
-        'paid',
-        'QRIS'
-      );
-      
-      // Get updated transaction
+    if (midtransStatus.status === 'paid') {
+      await transactionService.updatePaymentStatus(external_id, 'paid', 'QRIS');
       const updatedTransaction = await transactionService.getByExternalId(external_id);
       
       return res.json({
@@ -418,21 +418,26 @@ export const syncPaymentStatus = async (req, res) => {
         message: 'Payment confirmed!',
         data: updatedTransaction,
       });
-    } else if (xenditStatus.status === 'EXPIRED') {
+    } else if (midtransStatus.status === 'expired') {
       await transactionService.updatePaymentStatus(external_id, 'expired');
-      
       return res.json({
         success: true,
         message: 'Payment expired',
         data: { ...transaction, paymentStatus: 'expired' },
       });
-    } else if (xenditStatus.status === 'FAILED') {
+    } else if (midtransStatus.status === 'failed') {
       await transactionService.updatePaymentStatus(external_id, 'failed');
-      
       return res.json({
         success: true,
         message: 'Payment failed',
         data: { ...transaction, paymentStatus: 'failed' },
+      });
+    } else if (midtransStatus.status === 'cancelled') {
+      await transactionService.updatePaymentStatus(external_id, 'cancelled');
+      return res.json({
+        success: true,
+        message: 'Payment cancelled',
+        data: { ...transaction, paymentStatus: 'cancelled' },
       });
     }
     
@@ -440,7 +445,7 @@ export const syncPaymentStatus = async (req, res) => {
     return res.json({
       success: true,
       message: 'Payment still pending',
-      xenditStatus: xenditStatus.status,
+      midtransStatus: midtransStatus.midtransStatus,
       data: transaction,
     });
   } catch (error) {

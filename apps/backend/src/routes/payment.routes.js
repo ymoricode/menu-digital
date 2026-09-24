@@ -3,9 +3,9 @@ import transactionController from '../controllers/transaction.controller.js';
 
 const router = Router();
 
-// Xendit Payment Request API v3 webhook (no auth — verified by x-callback-token)
+// Midtrans Payment Notification webhook (no auth middleware — verified by signature)
 router.post('/webhook', transactionController.paymentWebhook);
-router.post('/xendit/callback', transactionController.paymentWebhook); // Legacy alias
+router.post('/notification', transactionController.paymentWebhook); // Alias for Midtrans naming
 
 // Payment status check (lightweight, DB-only — used by frontend polling)
 router.get('/status/:id', transactionController.checkPaymentStatus);

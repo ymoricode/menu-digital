@@ -21,7 +21,7 @@ const PaymentResult = () => {
     
     setChecking(true);
     try {
-      // Use sync endpoint to check Xendit API and update database
+      // Use sync endpoint to check Midtrans API and update database
       const response = await transactionsAPI.syncPaymentStatus(externalId);
       const data = response.data.data;
       
