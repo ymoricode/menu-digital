@@ -111,6 +111,16 @@ export const createQRISPayment = async ({ orderId, total, name, phone, items }) 
       throw new Error('QRIS QR data not found in Midtrans response');
     }
 
+    // ── Development-only: log QR data for Sandbox testing ──
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('\n[Midtrans QRIS] ═══════════════════════════════════════');
+      console.log(`  Order ID   : ${orderId}`);
+      console.log(`  QR Code URL: ${qrCodeUrl || '(not returned by Midtrans)'}`);
+      console.log(`  QR String  : ${qrString ? qrString.substring(0, 60) + '...' : '(not returned)'}`);
+      console.log(`  Expires At : ${result.expiry_time || 'N/A'}`);
+      console.log('═══════════════════════════════════════════════════════\n');
+    }
+
     return {
       success: true,
       orderId,
