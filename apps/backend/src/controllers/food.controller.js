@@ -184,10 +184,39 @@ export const remove = async (req, res) => {
   }
 };
 
+/**
+ * Toggle food availability (available / sold out)
+ */
+export const toggleAvailability = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const food = await foodService.toggleAvailability(parseInt(id));
+
+    if (!food) {
+      return res.status(404).json({
+        success: false,
+        message: 'Food not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: food.is_available ? 'Produk tersedia kembali' : 'Produk ditandai habis',
+      data: food,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to toggle availability',
+    });
+  }
+};
+
 export default {
   getAll,
   getById,
   create,
   update,
   remove,
+  toggleAvailability,
 };

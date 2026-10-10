@@ -16,6 +16,7 @@ export const getAll = async () => {
         price: foods.price,
         categoriesId: foods.categoriesId,
         categoryName: categories.name,
+        isAvailable: foods.isAvailable,
         createdAt: foods.createdAt,
         updatedAt: foods.updatedAt,
       })
@@ -43,6 +44,7 @@ export const getById = async (id) => {
         price: foods.price,
         categoriesId: foods.categoriesId,
         categoryName: categories.name,
+        isAvailable: foods.isAvailable,
         createdAt: foods.createdAt,
         updatedAt: foods.updatedAt,
       })
@@ -124,10 +126,41 @@ export const remove = async (id) => {
   }
 };
 
+/**
+ * Toggle food availability (available / sold out)
+ */
+export const toggleAvailability = async (id) => {
+  try {
+    // Get current status
+    const [food] = await db
+      .select({ id: foods.id, isAvailable: foods.isAvailable })
+      .from(foods)
+      .where(eq(foods.id, id))
+      .limit(1);
+
+    if (!food) return null;
+
+    // Toggle
+    const [updated] = await db
+      .update(foods)
+      .set({
+        isAvailable: !food.isAvailable,
+        updatedAt: new Date(),
+      })
+      .where(eq(foods.id, id))
+      .returning();
+
+    return updated;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export default {
   getAll,
   getById,
   create,
   update,
   remove,
+  toggleAvailability,
 };

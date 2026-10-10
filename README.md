@@ -1,130 +1,231 @@
-<p align="center">
-  <h1 align="center">🍔 Menu Digital</h1>
-  <p align="center">
-    <strong>QR Code Ordering & QRIS Payment System for Restaurants</strong>
-  </p>
-  <p align="center">
-    Sistem pemesanan digital berbasis QR Code dengan pembayaran QRIS untuk restoran dan kafe.
-  </p>
-</p>
+# 🍽️ Menu Digital — Sistem Pemesanan Makanan Berbasis QR Code
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-≥18.0.0-339933?logo=node.js&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Express.js-4-000000?logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Midtrans-QRIS-0a7cff?logo=midtrans&logoColor=white" alt="Midtrans" />
-  <img src="https://img.shields.io/badge/Deploy-Vercel-000?logo=vercel&logoColor=white" alt="Vercel" />
-</p>
+> **Sistem informasi pemesanan makanan berbasis web dengan teknologi QR Code untuk restoran/rumah makan, dibangun menggunakan arsitektur Fullstack JavaScript (React.js & Express.js).**
 
 ---
 
-## 📖 Daftar Isi
+## 📋 Daftar Isi
 
-- [Tentang Proyek](#-tentang-proyek)
-- [Fitur Utama](#-fitur-utama)
-- [Arsitektur & Tech Stack](#-arsitektur--tech-stack)
+- [Deskripsi Sistem](#-deskripsi-sistem)
+- [Latar Belakang](#-latar-belakang)
+- [Fitur Sistem](#-fitur-sistem)
+- [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
+- [Arsitektur Sistem](#-arsitektur-sistem)
 - [Struktur Proyek](#-struktur-proyek)
 - [Database Schema](#-database-schema)
-- [Alur Pembayaran QRIS](#-alur-pembayaran-qris)
-- [API Reference](#-api-reference)
-- [Prerequisites](#-prerequisites)
-- [Instalasi & Setup](#%EF%B8%8F-instalasi--setup)
-- [Menjalankan Aplikasi](#-menjalankan-aplikasi)
+- [API Endpoints](#-api-endpoints)
+- [Alur Kerja Sistem](#-alur-kerja-sistem)
+- [Instalasi & Konfigurasi](#-instalasi--konfigurasi)
 - [Deployment](#-deployment)
-- [Environment Variables](#-environment-variables)
-- [Scripts](#-scripts)
-- [Keamanan](#-keamanan)
+- [Screenshot](#-screenshot)
+- [Lisensi](#-lisensi)
 
 ---
 
-## 🎯 Tentang Proyek
+## 📝 Deskripsi Sistem
 
-**Menu Digital** adalah aplikasi web full-stack yang dirancang untuk restoran dan kafe agar bisa menyediakan pengalaman pemesanan digital yang seamless melalui QR Code. Pelanggan cukup scan QR Code di meja, browse menu, pesan, dan bayar langsung via QRIS — tanpa perlu memanggil pelayan.
+**Menu Digital** adalah sebuah sistem informasi berbasis web yang dirancang untuk mempermudah proses pemesanan makanan di restoran atau rumah makan. Sistem ini memanfaatkan teknologi **QR Code** sebagai media akses menu digital oleh pelanggan. Setiap meja di restoran memiliki QR Code unik yang apabila dipindai akan menampilkan daftar menu secara digital melalui perangkat smartphone pelanggan.
 
-Proyek ini dibangun dengan arsitektur **monorepo** menggunakan **npm workspaces**, terdiri dari dua aplikasi utama: **frontend** (React + Vite) dan **backend** (Express.js + PostgreSQL).
+Sistem ini terdiri dari dua sisi utama:
+
+1. **Sisi Pelanggan (Customer)** — Antarmuka untuk memindai QR Code, melihat menu, menambahkan pesanan ke keranjang, melakukan checkout, dan membayar melalui QRIS (Midtrans Payment Gateway).
+2. **Sisi Admin (Back Office)** — Dashboard manajemen untuk mengelola produk/menu, kategori, QR Code meja, memantau transaksi, dan melihat laporan penjualan.
 
 ---
 
-## ✨ Fitur Utama
+## 🎯 Latar Belakang
+
+Proses pemesanan makanan secara konvensional di restoran seringkali menghadapi beberapa kendala, antara lain:
+
+- Antrian panjang untuk memesan di kasir
+- Kesalahan pencatatan pesanan secara manual
+- Keterbatasan informasi menu (gambar, deskripsi, harga)
+- Proses pembayaran yang lambat dan tidak efisien
+- Kesulitan dalam melakukan rekap data penjualan
+
+Dengan adanya sistem **Menu Digital** berbasis QR Code ini, diharapkan dapat:
+
+- Mempercepat proses pemesanan makanan
+- Mengurangi kesalahan pencatatan pesanan
+- Memberikan pengalaman pemesanan yang modern dan efisien
+- Mengintegrasikan sistem pembayaran digital (QRIS)
+- Mempermudah pengelolaan data menu dan transaksi
+
+---
+
+## ✨ Fitur Sistem
 
 ### 👤 Sisi Pelanggan (Customer)
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Scan QR Code** | Scan QR di meja untuk memulai pemesanan |
-| **Digital Menu** | Browse menu berdasarkan kategori dengan gambar & deskripsi |
-| **Keranjang** | Tambah/kurangi item, lihat subtotal real-time |
-| **Checkout** | Isi nama & nomor telepon, lalu submit pesanan |
-| **Pembayaran QRIS** | Bayar langsung via QR Code QRIS (GoPay, DANA, OVO, ShopeePay, Mobile Banking, dll.) |
-| **Status Pembayaran** | Polling otomatis — halaman auto-redirect ke sukses/gagal |
 
-### 🔧 Sisi Admin (Dashboard)
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Dashboard Analytics** | Ringkasan penjualan, pendapatan harian/mingguan/bulanan, dan grafik chart |
-| **Manajemen Produk** | CRUD makanan/minuman dengan upload gambar ke Cloudinary |
-| **Manajemen Kategori** | CRUD kategori menu |
-| **Manajemen QR/Barcode** | Generate dan kelola QR Code per meja |
-| **Manajemen Transaksi** | Lihat semua transaksi, filter, selesaikan, atau batalkan pesanan |
-| **Export Excel** | Ekspor data transaksi ke file `.xlsx` |
-| **Notifikasi Real-time** | Notifikasi SSE untuk pesanan baru & pembayaran masuk |
-| **Auto Unlock Meja** | Background job otomatis membersihkan meja yang terkunci karena transaksi expired/gagal |
+| No | Fitur | Deskripsi |
+|----|-------|-----------|
+| 1 | **Scan QR Code** | Pelanggan memindai QR Code pada meja untuk mengakses menu digital |
+| 2 | **Lihat Menu** | Menampilkan daftar menu berdasarkan kategori dengan gambar dan harga |
+| 3 | **Detail Menu** | Menampilkan informasi lengkap (gambar, deskripsi, harga) setiap item menu |
+| 4 | **Keranjang Belanja** | Menambah, mengubah jumlah, dan menghapus item pesanan |
+| 5 | **Checkout & Pembayaran** | Proses checkout dengan input data pelanggan dan pembayaran QRIS |
+| 6 | **Pembayaran QRIS** | Pembayaran digital melalui QRIS yang terintegrasi dengan Midtrans |
+| 7 | **Status Pembayaran** | Halaman konfirmasi status pembayaran (berhasil/gagal) |
+
+### 🔐 Sisi Admin (Back Office)
+
+| No | Fitur | Deskripsi |
+|----|-------|-----------|
+| 1 | **Login & Autentikasi** | Sistem login admin dengan JWT (JSON Web Token) |
+| 2 | **Dashboard** | Ringkasan data penjualan, grafik pendapatan, dan statistik transaksi |
+| 3 | **Manajemen Produk** | CRUD (Create, Read, Update, Delete) data menu/makanan dengan upload gambar |
+| 4 | **Manajemen Kategori** | CRUD data kategori menu (makanan, minuman, dll.) |
+| 5 | **Manajemen QR Code** | Generate dan kelola QR Code untuk setiap meja |
+| 6 | **Manajemen Transaksi** | Melihat, memproses, dan ekspor data transaksi ke Excel |
+| 7 | **Notifikasi Real-time** | Notifikasi pesanan masuk secara real-time melalui polling |
 
 ---
 
-## 🏗 Arsitektur & Tech Stack
+## 🛠️ Teknologi yang Digunakan
 
-### Monorepo Structure (npm workspaces)
+### Frontend (Client-Side)
+
+| Teknologi | Versi | Keterangan |
+|-----------|-------|------------|
+| **React.js** | ^18.2.0 | Library JavaScript untuk membangun antarmuka pengguna (UI) berbasis komponen |
+| **Vite** | ^5.0.8 | Build tool modern untuk proyek frontend, menyediakan Hot Module Replacement (HMR) yang cepat |
+| **React Router DOM** | ^6.21.0 | Library routing untuk navigasi halaman pada Single Page Application (SPA) |
+| **Zustand** | ^4.4.7 | State management library yang ringan untuk mengelola state global (keranjang belanja) |
+| **Axios** | ^1.6.2 | HTTP client berbasis promise untuk melakukan request ke RESTful API backend |
+| **TailwindCSS** | ^3.3.6 | Utility-first CSS framework untuk styling antarmuka dengan cepat dan responsif |
+| **PostCSS** | ^8.4.32 | Tool untuk mentransformasi CSS dengan plugin JavaScript |
+| **Autoprefixer** | ^10.4.16 | Plugin PostCSS untuk menambahkan vendor prefix CSS secara otomatis |
+| **Recharts** | ^2.10.3 | Library charting berbasis React untuk visualisasi data pada dashboard admin |
+| **Lucide React** | ^0.294.0 | Library ikon modern berbasis SVG untuk elemen UI |
+| **QRCode.react** | ^3.1.0 | Komponen React untuk menampilkan QR Code pada sisi admin |
+| **html5-qrcode** | ^2.3.8 | Library JavaScript untuk memindai QR Code menggunakan kamera perangkat |
+| **React Hot Toast** | ^2.4.1 | Library notifikasi toast yang ringan untuk feedback interaksi pengguna |
+
+### Backend (Server-Side)
+
+| Teknologi | Versi | Keterangan |
+|-----------|-------|------------|
+| **Node.js** | ≥18.0.0 | Runtime environment JavaScript untuk menjalankan kode di sisi server |
+| **Express.js** | ^4.18.2 | Framework web minimalis untuk Node.js, digunakan untuk membangun RESTful API |
+| **Drizzle ORM** | ^0.29.3 | ORM (Object-Relational Mapping) TypeScript-first untuk interaksi dengan database PostgreSQL |
+| **Drizzle Kit** | ^0.20.10 | CLI tool untuk generate dan push migrasi database schema |
+| **pg (node-postgres)** | ^8.11.3 | Driver PostgreSQL untuk Node.js, digunakan sebagai adapter Drizzle ORM |
+| **JSON Web Token (JWT)** | ^9.0.2 | Standar untuk membuat token akses yang digunakan dalam autentikasi API |
+| **bcryptjs** | ^2.4.3 | Library untuk hashing password menggunakan algoritma bcrypt |
+| **Multer** | ^1.4.5 | Middleware untuk handling file upload (gambar menu) pada Express.js |
+| **Cloudinary** | ^2.8.0 | Cloud-based image management service untuk menyimpan dan mengoptimasi gambar produk |
+| **QRCode** | ^1.5.3 | Library untuk generate QR Code dalam format gambar di sisi server |
+| **XLSX (SheetJS)** | ^0.18.5 | Library untuk membaca dan membuat file Excel, digunakan untuk ekspor data transaksi |
+| **UUID** | ^9.0.1 | Library untuk generate Universally Unique Identifier untuk kode transaksi |
+| **CORS** | ^2.8.5 | Middleware Express.js untuk mengaktifkan Cross-Origin Resource Sharing |
+| **dotenv** | ^16.3.1 | Modul untuk memuat environment variable dari file `.env` |
+| **Nodemon** | ^3.0.2 | Tool untuk auto-restart server Node.js saat terjadi perubahan kode (development) |
+| **Concurrently** | ^8.2.2 | Tool untuk menjalankan frontend dan backend secara bersamaan dalam satu terminal |
+
+### Database
+
+| Teknologi | Keterangan |
+|-----------|------------|
+| **PostgreSQL** | Sistem manajemen basis data relasional (RDBMS) open-source yang powerful dan reliable |
+| **Supabase** | Platform Backend-as-a-Service (BaaS) yang menyediakan hosting database PostgreSQL di cloud |
+
+### Payment Gateway
+
+| Teknologi | Keterangan |
+|-----------|------------|
+| **Midtrans** | Payment gateway Indonesia yang menyediakan metode pembayaran QRIS untuk transaksi digital |
+
+### Deployment & Hosting
+
+| Teknologi | Keterangan |
+|-----------|------------|
+| **Vercel** | Platform cloud untuk deployment frontend (Static Site) dan backend (Serverless Functions) |
+
+### Development Tools
+
+| Teknologi | Keterangan |
+|-----------|------------|
+| **Laragon** | Lingkungan pengembangan lokal (local development environment) untuk menjalankan proyek |
+| **Git** | Version control system untuk pelacakan perubahan kode sumber |
+| **npm** | Package manager untuk mengelola dependensi proyek JavaScript |
+| **npm Workspaces** | Fitur monorepo npm untuk mengelola multiple packages dalam satu repository |
+
+---
+
+## 🏗️ Arsitektur Sistem
+
+Sistem ini menggunakan arsitektur **Client-Server** dengan pola **RESTful API**, di mana frontend dan backend dipisahkan secara independen.
 
 ```
-menu-digital/
-├── apps/
-│   ├── frontend/    → React SPA (Customer & Admin UI)
-│   └── backend/     → Express REST API + Background Jobs
-├── api/             → Vercel Serverless Function (production adapter)
-└── package.json     → Root workspace config
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ARSITEKTUR SISTEM                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐          ┌──────────────┐     ┌───────────────┐  │
+│  │   Pelanggan   │          │    Admin      │     │   Midtrans    │  │
+│  │  (Smartphone) │          │  (Browser)    │     │   Webhook     │  │
+│  └──────┬───────┘          └──────┬───────┘     └──────┬────────┘  │
+│         │                         │                     │           │
+│         │    Scan QR Code         │    Login             │           │
+│         ▼                         ▼                     │           │
+│  ┌────────────────────────────────────────┐             │           │
+│  │          FRONTEND (React.js)           │             │           │
+│  │         Hosted on Vercel               │             │           │
+│  │                                        │             │           │
+│  │  • SPA (Single Page Application)       │             │           │
+│  │  • Routing: React Router DOM           │             │           │
+│  │  • State: Zustand + Context API        │             │           │
+│  │  • Styling: TailwindCSS                │             │           │
+│  │  • HTTP Client: Axios                  │             │           │
+│  └───────────────┬────────────────────────┘             │           │
+│                  │ HTTP Request (REST API)               │           │
+│                  ▼                                       ▼           │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │              BACKEND (Express.js + Node.js)                 │   │
+│  │             Vercel Serverless Functions                      │   │
+│  │                                                              │   │
+│  │  ┌────────────┐  ┌────────────┐  ┌─────────────────────┐   │   │
+│  │  │  Routes     │  │ Controllers│  │     Services        │   │   │
+│  │  │            │──▶│            │──▶│                     │   │   │
+│  │  │ • Auth     │  │ • Auth     │  │ • Auth Service      │   │   │
+│  │  │ • Menu     │  │ • Food     │  │ • Food Service      │   │   │
+│  │  │ • Food     │  │ • Category │  │ • Category Service  │   │   │
+│  │  │ • Category │  │ • Barcode  │  │ • Barcode Service   │   │   │
+│  │  │ • Barcode  │  │ • Dashboard│  │ • Transaction Svc   │   │   │
+│  │  │ • Payment  │  │ • Menu     │  │ • Midtrans Service  │   │   │
+│  │  │ • Transact │  │ • Transact │  │ • Cloudinary Svc    │   │   │
+│  │  │ • Dashboard│  │            │  │ • Dashboard Svc     │   │   │
+│  │  │ • Notif    │  │            │  │ • Notification Svc  │   │   │
+│  │  └────────────┘  └────────────┘  └─────────────────────┘   │   │
+│  │                                                              │   │
+│  │  ┌────────────┐  ┌──────────────────┐                       │   │
+│  │  │ Middleware  │  │    Database       │                       │   │
+│  │  │ • JWT Auth  │  │   (Drizzle ORM)  │                       │   │
+│  │  │ • Multer    │  │                  │                       │   │
+│  │  │ • CORS      │  │   PostgreSQL     │                       │   │
+│  │  └────────────┘  │  (Supabase)      │                       │   │
+│  │                   └──────────────────┘                       │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │               LAYANAN EKSTERNAL (Third-Party)               │   │
+│  │                                                              │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │   │
+│  │  │  Supabase    │  │  Cloudinary  │  │   Midtrans   │      │   │
+│  │  │  (Database)  │  │  (Image CDN) │  │  (Payment)   │      │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘      │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Frontend (`apps/frontend`)
+### Pola Arsitektur yang Diterapkan
 
-| Teknologi | Kegunaan |
-|-----------|----------|
-| **React 18** | UI library |
-| **Vite 5** | Build tool & dev server |
-| **Tailwind CSS 3** | Utility-first styling |
-| **React Router DOM 6** | Client-side routing |
-| **Zustand 4** | Lightweight state management (cart) |
-| **Axios** | HTTP client |
-| **Recharts** | Chart/grafik dashboard |
-| **Lucide React** | Icon library |
-| **html5-qrcode** | QR Code scanning (kamera) |
-| **qrcode.react** | QR Code rendering (QRIS) |
-| **React Hot Toast** | Toast notifications |
-
-### Backend (`apps/backend`)
-
-| Teknologi | Kegunaan |
-|-----------|----------|
-| **Node.js ≥18** | Runtime (ES Modules) |
-| **Express.js 4** | Web framework |
-| **PostgreSQL** | Relational database |
-| **Drizzle ORM** | Type-safe SQL query builder & schema |
-| **drizzle-kit** | Migration & schema push tooling |
-| **JWT (jsonwebtoken)** | Authentication tokens |
-| **bcryptjs** | Password hashing |
-| **Midtrans Core API v2** | QRIS payment processing |
-| **Cloudinary** | Cloud image hosting |
-| **Multer** | File upload handling (memory storage) |
-| **qrcode** | Server-side QR Code generation |
-| **xlsx** | Excel export |
-| **uuid** | Unique ID generation |
-
-### Deployment
-
-| Teknologi | Kegunaan |
-|-----------|----------|
-| **Vercel** | Hosting (frontend static + serverless API) |
-| **Supabase** | Managed PostgreSQL database |
+1. **Monorepo (npm Workspaces)** — Frontend dan backend dikelola dalam satu repository menggunakan npm Workspaces.
+2. **MVC (Model-View-Controller)** — Backend menerapkan pemisahan antara Routes → Controllers → Services → Database (Drizzle ORM).
+3. **SPA (Single Page Application)** — Frontend dibangun sebagai SPA menggunakan React.js dengan client-side routing.
+4. **RESTful API** — Komunikasi antara frontend dan backend menggunakan arsitektur REST melalui HTTP methods (GET, POST, PUT, DELETE).
+5. **Serverless** — Backend di-deploy sebagai Serverless Functions pada platform Vercel.
 
 ---
 
@@ -132,703 +233,463 @@ menu-digital/
 
 ```
 menu-digital/
+├── api/                              # Vercel Serverless Functions entry point
+│   ├── index.js                      # Router utama untuk serverless deployment
+│   └── package.json                  # Dependensi API serverless
 │
-├── 📦 package.json              # Root workspace config & scripts
-├── 🔧 vercel.json               # Vercel deployment config
-├── 📝 .gitignore                # Git ignore rules
-│
-├── 🌐 api/                      # Vercel Serverless Adapter
-│   ├── index.js                 # Catch-all serverless function
-│   └── package.json             # Serverless dependencies
-│
-├── 📱 apps/frontend/            # React Frontend
-│   ├── index.html               # Entry HTML
-│   ├── vite.config.js           # Vite config (dev proxy)
-│   ├── tailwind.config.js       # Tailwind CSS config
-│   ├── postcss.config.js        # PostCSS config
-│   ├── package.json             # Frontend dependencies
+├── apps/
+│   ├── frontend/                     # Aplikasi Frontend (React.js)
+│   │   ├── public/                   # Asset statis
+│   │   ├── src/
+│   │   │   ├── components/           # Komponen UI reusable
+│   │   │   │   ├── charts/           # Komponen grafik (Recharts)
+│   │   │   │   ├── layout/           # Layout komponen (Admin layout)
+│   │   │   │   └── ui/               # Komponen UI dasar
+│   │   │   ├── context/              # React Context (Cart Context)
+│   │   │   │   └── cartContext.jsx   # Context untuk keranjang belanja
+│   │   │   ├── hooks/                # Custom React Hooks
+│   │   │   │   ├── useCart.js        # Hook untuk keranjang belanja
+│   │   │   │   └── useNotifications.js # Hook untuk notifikasi real-time
+│   │   │   ├── pages/                # Halaman aplikasi
+│   │   │   │   ├── admin/            # Halaman admin
+│   │   │   │   │   ├── Barcodes.jsx  # Manajemen QR Code meja
+│   │   │   │   │   ├── Categories.jsx # Manajemen kategori
+│   │   │   │   │   ├── Dashboard.jsx # Dashboard admin
+│   │   │   │   │   ├── Login.jsx     # Halaman login admin
+│   │   │   │   │   ├── Products.jsx  # Manajemen produk/menu
+│   │   │   │   │   └── Transactions.jsx # Manajemen transaksi
+│   │   │   │   └── customer/         # Halaman pelanggan
+│   │   │   │       ├── Cart.jsx      # Keranjang belanja
+│   │   │   │       ├── Checkout.jsx  # Proses checkout
+│   │   │   │       ├── MenuDetail.jsx # Detail menu
+│   │   │   │       ├── MenuList.jsx  # Daftar menu
+│   │   │   │       ├── PaymentResult.jsx # Hasil pembayaran
+│   │   │   │       ├── QRISPayment.jsx # Halaman pembayaran QRIS
+│   │   │   │       └── ScanQR.jsx    # Halaman scan QR Code
+│   │   │   ├── services/             # Service layer
+│   │   │   │   └── api.js            # Konfigurasi Axios & API calls
+│   │   │   ├── App.jsx               # Root component & routing
+│   │   │   ├── main.jsx              # Entry point aplikasi React
+│   │   │   └── index.css             # Global stylesheet
+│   │   ├── index.html                # HTML template
+│   │   ├── vite.config.js            # Konfigurasi Vite
+│   │   ├── tailwind.config.js        # Konfigurasi TailwindCSS
+│   │   ├── postcss.config.js         # Konfigurasi PostCSS
+│   │   └── package.json              # Dependensi frontend
 │   │
-│   └── src/
-│       ├── main.jsx             # App entry point
-│       ├── App.jsx              # Route definitions
-│       ├── index.css            # Global styles
-│       │
-│       ├── pages/
-│       │   ├── customer/        # Customer-facing pages
-│       │   │   ├── ScanQR.jsx        # QR scanning page
-│       │   │   ├── MenuList.jsx      # Menu browsing
-│       │   │   ├── MenuDetail.jsx    # Item detail
-│       │   │   ├── Cart.jsx          # Shopping cart
-│       │   │   ├── Checkout.jsx      # Checkout form
-│       │   │   ├── QRISPayment.jsx   # QRIS payment page
-│       │   │   └── PaymentResult.jsx # Payment result
-│       │   │
-│       │   └── admin/           # Admin dashboard pages
-│       │       ├── Login.jsx         # Admin login
-│       │       ├── Dashboard.jsx     # Analytics dashboard
-│       │       ├── Products.jsx      # Product management
-│       │       ├── Categories.jsx    # Category management
-│       │       ├── Barcodes.jsx      # QR/Barcode management
-│       │       └── Transactions.jsx  # Transaction management
-│       │
-│       ├── components/
-│       │   ├── ui/              # Reusable UI components
-│       │   │   ├── Button.jsx
-│       │   │   ├── Card.jsx
-│       │   │   ├── Input.jsx
-│       │   │   └── Modal.jsx
-│       │   ├── layout/          # Layout components
-│       │   │   ├── LayoutAdmin.jsx
-│       │   │   ├── Navbar.jsx
-│       │   │   └── Sidebar.jsx
-│       │   └── charts/
-│       │       └── RevenueChart.jsx
-│       │
-│       ├── context/
-│       │   └── cartContext.jsx  # Cart context provider
-│       │
-│       ├── hooks/
-│       │   ├── useCart.js       # Cart hook
-│       │   └── useNotifications.js  # SSE notifications hook
-│       │
-│       └── services/
-│           └── api.js           # Axios API client
+│   └── backend/                      # Aplikasi Backend (Express.js)
+│       ├── drizzle/                  # File migrasi database
+│       │   └── migrations/           # SQL migration files
+│       ├── src/
+│       │   ├── controllers/          # Controller layer (handle request/response)
+│       │   │   ├── auth.controller.js       # Autentikasi (login/register)
+│       │   │   ├── barcode.controller.js    # Manajemen QR Code
+│       │   │   ├── category.controller.js   # Manajemen kategori
+│       │   │   ├── dashboard.controller.js  # Data dashboard
+│       │   │   ├── food.controller.js       # Manajemen produk makanan
+│       │   │   ├── menu.controller.js       # Menu publik (customer)
+│       │   │   └── transaction.controller.js # Manajemen transaksi & payment
+│       │   ├── db/                   # Database layer
+│       │   │   ├── index.js          # Koneksi database (Drizzle + pg)
+│       │   │   ├── schema.js         # Definisi schema tabel database
+│       │   │   └── migrations/       # Migration files
+│       │   ├── middleware/           # Express middleware
+│       │   │   └── auth.js           # JWT authentication middleware
+│       │   ├── routes/               # API route definitions
+│       │   │   ├── index.js          # Route aggregator
+│       │   │   ├── auth.routes.js    # Route autentikasi
+│       │   │   ├── barcode.routes.js # Route QR Code
+│       │   │   ├── category.routes.js # Route kategori
+│       │   │   ├── dashboard.routes.js # Route dashboard
+│       │   │   ├── food.routes.js    # Route produk
+│       │   │   ├── menu.routes.js    # Route menu publik
+│       │   │   ├── notification.routes.js # Route notifikasi
+│       │   │   ├── payment.routes.js # Route pembayaran (webhook)
+│       │   │   └── transaction.routes.js # Route transaksi
+│       │   ├── services/             # Business logic layer
+│       │   │   ├── auth.service.js        # Logika autentikasi
+│       │   │   ├── barcode.service.js     # Logika QR Code
+│       │   │   ├── category.service.js    # Logika kategori
+│       │   │   ├── cloudinary.service.js  # Integrasi Cloudinary (upload gambar)
+│       │   │   ├── dashboard.service.js   # Logika dashboard & statistik
+│       │   │   ├── food.service.js        # Logika produk makanan
+│       │   │   ├── menu.service.js        # Logika menu publik
+│       │   │   ├── midtrans.service.js    # Integrasi Midtrans Payment
+│       │   │   ├── notification.service.js # Logika notifikasi
+│       │   │   └── transaction.service.js # Logika transaksi
+│       │   ├── jobs/                 # Background jobs
+│       │   ├── utils/                # Utility functions
+│       │   ├── app.js                # Express app configuration
+│       │   └── server.js             # Server entry point
+│       ├── uploads/                  # Direktori upload file lokal
+│       ├── drizzle.config.js         # Konfigurasi Drizzle Kit
+│       ├── migrate.js                # Script migrasi database
+│       ├── seed.js                   # Script seeder data awal
+│       ├── .env                      # Environment variables
+│       └── package.json              # Dependensi backend
 │
-└── ⚙️ apps/backend/             # Express Backend
-    ├── package.json             # Backend dependencies
-    ├── drizzle.config.js        # Drizzle ORM config
-    ├── migrate.js               # Manual migration script
-    ├── seed.js                  # Admin seeder script
-    ├── .env                     # Environment variables
-    │
-    ├── drizzle/                 # Generated migrations
-    │
-    └── src/
-        ├── app.js               # Express app setup (CORS, middleware, routes)
-        ├── server.js            # HTTP server + graceful shutdown
-        │
-        ├── db/
-        │   ├── index.js         # Database connection (Drizzle + pg)
-        │   ├── schema.js        # Drizzle schema definitions
-        │   └── migrations/      # Migration files
-        │
-        ├── routes/
-        │   ├── index.js              # Route aggregator
-        │   ├── auth.routes.js        # Authentication routes
-        │   ├── menu.routes.js        # Public menu routes
-        │   ├── category.routes.js    # Category CRUD routes
-        │   ├── food.routes.js        # Food/product CRUD routes
-        │   ├── barcode.routes.js     # QR barcode routes
-        │   ├── transaction.routes.js # Transaction routes
-        │   ├── payment.routes.js     # Payment webhook & status
-        │   ├── dashboard.routes.js   # Dashboard analytics
-        │   └── notification.routes.js # SSE notification stream
-        │
-        ├── controllers/
-        │   ├── auth.controller.js
-        │   ├── menu.controller.js
-        │   ├── category.controller.js
-        │   ├── food.controller.js
-        │   ├── barcode.controller.js
-        │   ├── transaction.controller.js
-        │   └── dashboard.controller.js
-        │
-        ├── services/
-        │   ├── auth.service.js
-        │   ├── menu.service.js
-        │   ├── category.service.js
-        │   ├── food.service.js
-        │   ├── barcode.service.js
-        │   ├── transaction.service.js
-        │   ├── midtrans.service.js       # QRIS payment via Midtrans
-        │   ├── cloudinary.service.js     # Image upload to Cloudinary
-        │   ├── dashboard.service.js      # Analytics queries
-        │   └── notification.service.js   # SSE broadcast service
-        │
-        ├── middleware/
-        │   └── auth.js          # JWT auth & admin middleware
-        │
-        ├── jobs/
-        │   └── autoUnlock.job.js  # Background table auto-unlock
-        │
-        └── utils/
-            └── qrcode.js        # QR Code generation utility
+├── vercel.json                       # Konfigurasi deployment Vercel
+├── package.json                      # Root package.json (Monorepo)
+├── package-lock.json                 # Lock file dependensi
+├── .gitignore                        # Git ignore rules
+└── README.md                         # Dokumentasi proyek (file ini)
 ```
 
 ---
 
-## 🗄 Database Schema
+## 🗄️ Database Schema
 
-Aplikasi menggunakan **PostgreSQL** dengan **Drizzle ORM**. Berikut Entity Relationship Diagram:
+Sistem ini menggunakan **6 tabel utama** pada database PostgreSQL yang didefinisikan menggunakan Drizzle ORM:
 
-```mermaid
-erDiagram
-    users ||--o{ barcodes : "creates"
-    categories ||--o{ foods : "has"
-    barcodes ||--o{ transactions : "has"
-    transactions ||--o{ transaction_items : "contains"
-    foods ||--o{ transaction_items : "included_in"
-
-    users {
-        serial id PK
-        varchar name
-        varchar email UK
-        varchar password
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    categories {
-        serial id PK
-        varchar name
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    foods {
-        serial id PK
-        varchar name
-        text description
-        varchar image
-        integer price
-        integer categories_id FK
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    barcodes {
-        serial id PK
-        varchar table_number
-        varchar image
-        varchar qr_value
-        integer user_id FK
-        boolean is_occupied
-        timestamp locked_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    transactions {
-        serial id PK
-        varchar code
-        varchar name
-        varchar phone
-        varchar external_id
-        varchar checkout_link
-        integer barcode_id FK
-        varchar payment_method
-        varchar payment_status
-        integer total
-        timestamp completed_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    transaction_items {
-        serial id PK
-        integer transaction_id FK
-        integer foods_id FK
-        integer quantity
-        integer price
-        integer subtotal
-        timestamp created_at
-        timestamp updated_at
-    }
-```
-
-### Tabel & Relasi
-
-| Tabel | Deskripsi |
-|-------|-----------|
-| `users` | Admin users (login dashboard) |
-| `categories` | Kategori menu (Makanan, Minuman, dll.) |
-| `foods` | Item menu dengan harga dan gambar |
-| `barcodes` | QR Code per meja, tracking status meja (occupied/available) |
-| `transactions` | Pesanan pelanggan dengan info pembayaran |
-| `transaction_items` | Detail item per transaksi (relasi many-to-many foods ↔ transactions) |
-
-### Payment Status Flow
+### Entity Relationship Diagram (ERD)
 
 ```
-pending → paid       (pembayaran berhasil via webhook/sync)
-pending → expired    (pembayaran kedaluwarsa, >15 menit)
-pending → cancelled  (admin membatalkan)
-pending → failed     (pembayaran ditolak)
-paid    → completed  (admin menyelesaikan pesanan)
+┌──────────────┐       ┌──────────────┐       ┌──────────────────┐
+│    users     │       │  categories  │       │      foods       │
+├──────────────┤       ├──────────────┤       ├──────────────────┤
+│ id (PK)      │       │ id (PK)      │       │ id (PK)          │
+│ name         │       │ name         │◄──────│ categories_id(FK)│
+│ email (UQ)   │       │ created_at   │  1:N  │ name             │
+│ password     │       │ updated_at   │       │ description      │
+│ created_at   │       └──────────────┘       │ image            │
+│ updated_at   │                              │ price            │
+└──────┬───────┘                              │ created_at       │
+       │                                      │ updated_at       │
+       │ 1:N                                  └────────┬─────────┘
+       ▼                                               │
+┌──────────────┐       ┌──────────────────┐            │
+│   barcodes   │       │  transactions    │            │
+├──────────────┤       ├──────────────────┤            │
+│ id (PK)      │       │ id (PK)          │            │
+│ table_number │       │ code             │            │
+│ image        │◄──────│ barcode_id (FK)  │            │
+│ qr_value     │  1:N  │ name             │            │
+│ user_id (FK) │──┐    │ phone            │            │
+│ is_occupied  │  │    │ external_id      │            │
+│ locked_at    │  │    │ checkout_link    │            │
+│ created_at   │  │    │ payment_method   │            │
+│ updated_at   │  │    │ payment_status   │            │
+└──────────────┘  │    │ total            │            │
+                  │    │ completed_at     │            │
+    ┌─────────────┘    │ created_at       │            │
+    │ users             │ updated_at       │            │
+    │ (1:N)             └────────┬─────────┘            │
+    │                            │ 1:N                  │ 1:N
+    │                            ▼                      │
+    │               ┌────────────────────────┐          │
+    │               │   transaction_items    │          │
+    │               ├────────────────────────┤          │
+    │               │ id (PK)                │          │
+    │               │ transaction_id (FK) ───┘          │
+    │               │ foods_id (FK) ────────────────────┘
+    │               │ quantity               │
+    │               │ price                  │
+    │               │ subtotal               │
+    │               │ created_at             │
+    │               │ updated_at             │
+    │               └────────────────────────┘
+```
+
+### Deskripsi Tabel
+
+| No | Tabel | Deskripsi |
+|----|-------|-----------|
+| 1 | **users** | Menyimpan data pengguna admin (nama, email, password terenkripsi) |
+| 2 | **categories** | Menyimpan data kategori menu (makanan, minuman, snack, dll.) |
+| 3 | **foods** | Menyimpan data produk/menu beserta gambar, deskripsi, harga, dan relasi ke kategori |
+| 4 | **barcodes** | Menyimpan data QR Code untuk setiap meja, termasuk nomor meja dan status ketersediaan |
+| 5 | **transactions** | Menyimpan data transaksi pesanan termasuk kode unik, data pelanggan, metode pembayaran, dan status |
+| 6 | **transaction_items** | Menyimpan detail item pesanan (relasi many-to-many antara transaksi dan menu) |
+
+### Relasi Antar Tabel
+
+| Relasi | Tipe | Keterangan |
+|--------|------|------------|
+| users → barcodes | One-to-Many | Satu admin dapat membuat banyak QR Code meja |
+| categories → foods | One-to-Many | Satu kategori memiliki banyak menu |
+| barcodes → transactions | One-to-Many | Satu meja (QR Code) dapat memiliki banyak transaksi |
+| transactions → transaction_items | One-to-Many | Satu transaksi memiliki banyak item pesanan |
+| foods → transaction_items | One-to-Many | Satu menu dapat muncul di banyak item transaksi |
+
+---
+
+## 🔌 API Endpoints
+
+### Autentikasi
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `POST` | `/api/auth/login` | Login admin | ❌ |
+| `POST` | `/api/auth/register` | Register admin | ❌ |
+
+### Menu (Public — Pelanggan)
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/menus` | Mendapatkan semua menu beserta kategori | ❌ |
+
+### Produk/Makanan
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/foods` | Mendapatkan semua produk | ✅ |
+| `POST` | `/api/foods` | Menambah produk baru (dengan upload gambar) | ✅ |
+| `PUT` | `/api/foods/:id` | Mengupdate produk | ✅ |
+| `DELETE` | `/api/foods/:id` | Menghapus produk | ✅ |
+
+### Kategori
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/categories` | Mendapatkan semua kategori | ✅ |
+| `POST` | `/api/categories` | Menambah kategori baru | ✅ |
+| `PUT` | `/api/categories/:id` | Mengupdate kategori | ✅ |
+| `DELETE` | `/api/categories/:id` | Menghapus kategori | ✅ |
+
+### QR Code / Barcode
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/barcodes` | Mendapatkan semua QR Code meja | ✅ |
+| `POST` | `/api/barcodes` | Generate QR Code baru | ✅ |
+| `DELETE` | `/api/barcodes/:id` | Menghapus QR Code | ✅ |
+| `GET` | `/api/barcode/:table_number` | Mendapatkan info meja (public) | ❌ |
+
+### Transaksi
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/transactions` | Mendapatkan semua transaksi | ✅ |
+| `POST` | `/api/transactions` | Membuat transaksi baru (checkout) | ❌ |
+
+### Pembayaran
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `POST` | `/api/payment/webhook` | Webhook notifikasi Midtrans | ❌ |
+| `GET` | `/api/payment/status/:id` | Cek status pembayaran | ❌ |
+
+### Dashboard
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/dashboard/stats` | Statistik penjualan | ✅ |
+
+### Notifikasi
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/api/notifications` | Mendapatkan notifikasi pesanan | ✅ |
+
+---
+
+## 🔄 Alur Kerja Sistem
+
+### Alur Pemesanan Pelanggan
+
+```
+┌─────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  1. Scan QR  │───▶│ 2. Lihat     │───▶│ 3. Tambah ke │───▶│ 4. Checkout  │
+│  Code Meja   │    │    Menu      │    │   Keranjang  │    │  & Isi Data  │
+└─────────────┘    └──────────────┘    └──────────────┘    └──────┬───────┘
+                                                                  │
+                                                                  ▼
+┌─────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ 7. Pesanan   │◀──│ 6. Konfirmasi│◀──│ 5. Bayar     │◀──│ 4b. Pilih    │
+│   Selesai    │    │   Pembayaran │    │   via QRIS   │    │ Pembayaran   │
+└─────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+```
+
+### Alur Pembayaran QRIS (Midtrans)
+
+```
+┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
+│  Frontend   │   │  Backend    │   │  Midtrans   │   │  Database   │
+│  (React)    │   │  (Express)  │   │  API        │   │ (PostgreSQL)│
+└─────┬──────┘   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘
+      │                │                │                 │
+      │  1. POST       │                │                 │
+      │  /transactions │                │                 │
+      │───────────────▶│                │                 │
+      │                │  2. Create     │                 │
+      │                │  QRIS Charge   │                 │
+      │                │───────────────▶│                 │
+      │                │                │                 │
+      │                │  3. Return QR  │                 │
+      │                │  Code URL      │                 │
+      │                │◀───────────────│                 │
+      │                │                │                 │
+      │                │  4. Save       │                 │
+      │                │  Transaction   │                 │
+      │                │────────────────│────────────────▶│
+      │                │                │                 │
+      │  5. Return     │                │                 │
+      │  QR Code       │                │                 │
+      │◀───────────────│                │                 │
+      │                │                │                 │
+      │  6. Tampilkan  │                │                 │
+      │  QR Code QRIS  │                │                 │
+      │  (Pelanggan    │                │                 │
+      │   scan & bayar)│                │                 │
+      │                │                │                 │
+      │                │  7. Webhook    │                 │
+      │                │  Notification  │                 │
+      │                │◀───────────────│                 │
+      │                │                │                 │
+      │                │  8. Update     │                 │
+      │                │  Status        │                 │
+      │                │────────────────│────────────────▶│
+      │                │                │                 │
+      │  9. Polling    │                │                 │
+      │  Check Status  │                │                 │
+      │───────────────▶│                │                 │
+      │                │  10. Query     │                 │
+      │                │────────────────│────────────────▶│
+      │                │◀───────────────│─────────────────│
+      │  11. Status    │                │                 │
+      │  "settlement"  │                │                 │
+      │◀───────────────│                │                 │
+      │                │                │                 │
+      │  12. Redirect  │                │                 │
+      │  ke halaman    │                │                 │
+      │  sukses        │                │                 │
+      │                │                │                 │
 ```
 
 ---
 
-## 💳 Alur Pembayaran QRIS
+## ⚙️ Instalasi & Konfigurasi
 
-### Payment Provider: Midtrans (Core API v2)
+### Prasyarat (Prerequisites)
 
-Sistem pembayaran menggunakan **QRIS** sebagai satu-satunya metode pembayaran. QR Code ditampilkan langsung di dalam aplikasi setelah checkout.
+Pastikan perangkat lunak berikut sudah terinstall:
 
-### Flow Diagram
+- **Node.js** versi ≥ 18.0.0 — [Download](https://nodejs.org/)
+- **npm** (termasuk dalam instalasi Node.js)
+- **Git** — [Download](https://git-scm.com/)
+- **PostgreSQL** (atau gunakan Supabase untuk cloud database)
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Customer    │     │   Backend    │     │    Midtrans      │
-│  (Frontend)  │     │   (Express)  │     │   Core API v2    │
-└──────┬───────┘     └──────┬───────┘     └────────┬─────────┘
-       │                    │                      │
-       │  1. Submit Order   │                      │
-       │───────────────────>│                      │
-       │                    │  2. POST /v2/charge  │
-       │                    │  (payment_type:qris) │
-       │                    │─────────────────────>│
-       │                    │                      │
-       │                    │  3. Return qr_string │
-       │                    │<─────────────────────│
-       │  4. Display QRIS   │                      │
-       │<───────────────────│                      │
-       │                    │                      │
-       │  5. Customer scans │                      │
-       │  QR with e-wallet  │                      │
-       │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─>│
-       │                    │                      │
-       │                    │  6. Webhook POST     │
-       │                    │  /api/payment/webhook│
-       │                    │<─────────────────────│
-       │                    │                      │
-       │                    │  7. Verify signature │
-       │                    │  (SHA512 validation) │
-       │                    │                      │
-       │  8. Polling status │                      │
-       │───────────────────>│                      │
-       │                    │                      │
-       │  9. Payment SUCCESS│                      │
-       │<───────────────────│                      │
-       │                    │                      │
-       │  10. Redirect to   │                      │
-       │  success page      │                      │
-       └────────────────────┘                      │
-```
+### Langkah Instalasi
 
-### Supported Payment Apps (via QRIS)
-- **E-Wallets**: GoPay, DANA, OVO, ShopeePay, LinkAja
-- **Mobile Banking**: BCA, BRI, Mandiri, BNI, dan semua bank yang mendukung QRIS
-- **Semua aplikasi** yang mendukung standar QRIS Bank Indonesia
-
-### Keamanan Pembayaran
-- ✅ Payment status hanya di-set via **Midtrans webhook** atau **backend API verification**
-- ✅ Webhook signature divalidasi via **SHA512** (`order_id + status_code + gross_amount + server_key`)
-- ✅ Jumlah pembayaran diverifikasi terhadap total pesanan
-- ✅ **Idempotent processing** — mencegah duplikasi pembayaran
-- ✅ Mock mode tersedia untuk development tanpa API key Midtrans
-
----
-
-## 📡 API Reference
-
-Base URL: `/api`
-
-### Authentication
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `POST` | `/api/auth/login` | ❌ | Login admin |
-| `POST` | `/api/auth/register` | ❌ | Register user baru |
-| `POST` | `/api/auth/logout` | ✅ | Logout |
-| `GET` | `/api/auth/profile` | ✅ | Get profile user |
-
-### Menu (Public)
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/menus` | ❌ | Get semua menu dengan kategori |
-
-### Categories
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/categories` | ❌ | Get semua kategori |
-| `POST` | `/api/categories` | ✅ Admin | Tambah kategori |
-| `PUT` | `/api/categories/:id` | ✅ Admin | Update kategori |
-| `DELETE` | `/api/categories/:id` | ✅ Admin | Hapus kategori |
-
-### Foods / Products
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/foods` | ❌ | Get semua produk |
-| `GET` | `/api/foods/:id` | ❌ | Get produk by ID |
-| `POST` | `/api/foods` | ✅ Admin | Tambah produk (multipart/form-data) |
-| `PUT` | `/api/foods/:id` | ✅ Admin | Update produk (multipart/form-data) |
-| `DELETE` | `/api/foods/:id` | ✅ Admin | Hapus produk |
-
-> **Note**: Upload gambar menggunakan field `image` (max 5MB, format: JPEG, PNG, GIF, WebP). Gambar otomatis di-upload ke Cloudinary.
-
-### Barcodes / QR Codes
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/barcode/table/:table_number` | ❌ | Get barcode by nomor meja |
-| `GET` | `/api/barcodes` | ✅ Admin | Get semua barcode |
-| `GET` | `/api/barcodes/:id` | ✅ Admin | Get barcode by ID |
-| `POST` | `/api/barcodes` | ✅ Admin | Generate barcode baru |
-| `POST` | `/api/barcodes/:id/regenerate` | ✅ Admin | Regenerate QR Code |
-| `DELETE` | `/api/barcodes/:id` | ✅ Admin | Hapus barcode |
-
-### Transactions
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `POST` | `/api/transactions` | ❌ | Buat transaksi baru (customer checkout) |
-| `GET` | `/api/transactions/status/:external_id` | ❌ | Get transaksi by external ID |
-| `POST` | `/api/transactions/sync/:external_id` | ❌ | Sync status pembayaran dari Midtrans |
-| `GET` | `/api/transactions/table-status/:barcodeId` | ❌ | Cek status meja |
-| `GET` | `/api/transactions` | ✅ Admin | Get semua transaksi (with filter) |
-| `GET` | `/api/transactions/export` | ✅ Admin | Export transaksi ke Excel |
-| `GET` | `/api/transactions/:id` | ✅ Admin | Get detail transaksi |
-| `PATCH` | `/api/transactions/:id/complete` | ✅ Admin | Tandai pesanan selesai |
-| `PATCH` | `/api/transactions/:id/cancel` | ✅ Admin | Batalkan pesanan |
-
-### Payment
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `POST` | `/api/payment/webhook` | ❌* | Midtrans webhook notification |
-| `POST` | `/api/payment/notification` | ❌* | Alias untuk webhook |
-| `GET` | `/api/payment/status/:id` | ❌ | Cek status pembayaran (DB-only, untuk polling) |
-
-> \* Webhook diverifikasi via SHA512 signature, bukan JWT auth.
-
-### Dashboard (Admin)
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/dashboard/summary` | ✅ Admin | Ringkasan dashboard |
-| `GET` | `/api/dashboard/top-products` | ✅ Admin | Produk terlaris |
-| `GET` | `/api/dashboard/monthly-income` | ✅ Admin | Pendapatan bulanan |
-| `GET` | `/api/dashboard/weekly-income` | ✅ Admin | Pendapatan mingguan |
-| `GET` | `/api/dashboard/recent-transactions` | ✅ Admin | Transaksi terbaru |
-
-### Notifications (SSE)
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/notifications/stream` | ✅ Admin | SSE stream untuk notifikasi real-time |
-
-**SSE Events:**
-| Event | Deskripsi |
-|-------|-----------|
-| `connected` | Koneksi SSE berhasil |
-| `new_transaction` | Ada pesanan baru dari customer |
-| `payment_received` | Pembayaran berhasil diterima |
-| `payment_expired` | Pembayaran kedaluwarsa |
-
-### Health Check
-
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/api/health` | ❌ | Health check |
-
----
-
-## 📋 Prerequisites
-
-Pastikan sudah terinstall di komputer:
-
-| Software | Versi | Link |
-|----------|-------|------|
-| **Node.js** | ≥ 18.0.0 | [nodejs.org](https://nodejs.org/) |
-| **npm** | ≥ 8.0.0 | (bundled with Node.js) |
-| **PostgreSQL** | ≥ 13 | [postgresql.org](https://www.postgresql.org/) |
-
-### Akun Layanan Eksternal
-
-| Layanan | Kegunaan | Link |
-|---------|----------|------|
-| **Cloudinary** | Hosting gambar menu | [cloudinary.com](https://cloudinary.com/) |
-| **Midtrans** | Payment gateway QRIS | [midtrans.com](https://midtrans.com/) |
-| **Supabase** *(opsional)* | Managed PostgreSQL | [supabase.com](https://supabase.com/) |
-| **Vercel** *(opsional)* | Deployment | [vercel.com](https://vercel.com/) |
-
----
-
-## ⚙️ Instalasi & Setup
-
-### 1. Clone Repository
+#### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
-cd "menu digital"
+git clone https://github.com/ymoricode/menu-digital.git
+cd menu-digital
 ```
 
-### 2. Install Dependencies
-
-Dari root directory, install semua dependencies untuk frontend dan backend sekaligus:
+#### 2. Install Dependensi
 
 ```bash
+# Install semua dependensi (root + workspaces)
 npm install
 ```
 
-### 3. Setup Environment Variables
+#### 3. Konfigurasi Environment Variables
 
-Buat file `.env` di `apps/backend/`:
+Buat file `.env` di folder `apps/backend/` dengan konfigurasi berikut:
 
 ```env
 # Server
 PORT=5000
 NODE_ENV=development
 
-# Database (PostgreSQL)
-DATABASE_URL=postgresql://user:password@host:5432/dbname
+# Database - PostgreSQL (Supabase)
+DATABASE_URL=postgresql://username:password@host:5432/database
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-here
+# JWT Authentication
+JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRES_IN=7d
 
-# Midtrans (QRIS Payment)
-MIDTRANS_SERVER_KEY=SB-Mid-server-your_key
-MIDTRANS_CLIENT_KEY=SB-Mid-client-your_key
+# Midtrans Payment Gateway (QRIS)
+MIDTRANS_SERVER_KEY=your_midtrans_server_key
+MIDTRANS_CLIENT_KEY=your_midtrans_client_key
 MIDTRANS_IS_PRODUCTION=false
 
 # Frontend URL
 FRONTEND_URL=http://localhost:5173
 
-# Cloudinary
+# Cloudinary (Image Storage)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-> **📝 Catatan:**
-> - Dapatkan **Midtrans Server Key & Client Key** dari [Midtrans Dashboard](https://dashboard.midtrans.com/) → Settings → Access Keys
-> - Gunakan **Sandbox keys** untuk development (`SB-Mid-server-xxx`)
-> - Set `MIDTRANS_IS_PRODUCTION=true` hanya untuk production
-> - Jika Midtrans belum dikonfigurasi, aplikasi akan berjalan dalam **mock mode** (QR Code dummy)
-
-### 4. Setup Database
-
-#### Opsi A: Menggunakan Drizzle ORM (Recommended)
+#### 4. Setup Database
 
 ```bash
-# Generate migration files
+# Generate migrasi dari schema
 npm run db:generate
 
 # Push schema ke database
 npm run db:push
 ```
 
-#### Opsi B: Manual Migration
+#### 5. Jalankan Aplikasi (Development)
 
 ```bash
-cd apps/backend
-node migrate.js
-```
-
-Script ini akan membuat semua tabel dan akun admin default.
-
-### 5. Seed Admin User
-
-```bash
-cd apps/backend
-node seed.js
-```
-
-Akan membuat akun admin:
-| Field | Value |
-|-------|-------|
-| Email | `admin@menu.com` |
-| Password | `admin123` |
-
-### 6. Konfigurasi Midtrans Webhook
-
-Di [Midtrans Dashboard](https://dashboard.midtrans.com/) → Settings → Configuration:
-
-1. Set **Payment Notification URL** ke:
-   ```
-   https://your-domain.com/api/payment/webhook
-   ```
-2. Enable payment channel **GoPay** (diperlukan untuk QRIS)
-3. Untuk development lokal, gunakan tool seperti [ngrok](https://ngrok.com/) untuk expose localhost
-
----
-
-## 🏃 Menjalankan Aplikasi
-
-### Development Mode
-
-Jalankan frontend & backend secara bersamaan dari root directory:
-
-```bash
+# Jalankan frontend & backend secara bersamaan
 npm run dev
+
+# Atau jalankan secara terpisah:
+npm run dev:backend    # Backend berjalan di http://localhost:5000
+npm run dev:frontend   # Frontend berjalan di http://localhost:5173
 ```
-
-Atau jalankan secara terpisah:
-
-```bash
-# Backend saja (port 5000)
-npm run dev:backend
-
-# Frontend saja (port 5173)
-npm run dev:frontend
-```
-
-### Akses Aplikasi
-
-| Halaman | URL |
-|---------|-----|
-| 🏠 Customer (Scan QR) | `http://localhost:5173/` |
-| 📋 Menu | `http://localhost:5173/menu` |
-| 🛒 Cart | `http://localhost:5173/cart` |
-| 🔐 Admin Login | `http://localhost:5173/admin/login` |
-| 📊 Admin Dashboard | `http://localhost:5173/admin/dashboard` |
-| 🍔 Admin Products | `http://localhost:5173/admin/products` |
-| 🏷️ Admin Categories | `http://localhost:5173/admin/categories` |
-| 📱 Admin Barcodes | `http://localhost:5173/admin/barcodes` |
-| 💰 Admin Transactions | `http://localhost:5173/admin/transactions` |
-| ❤️ API Health | `http://localhost:5000/api/health` |
-
-### Vite Dev Proxy
-
-Pada development, Vite di-config untuk mem-proxy request `/api/*` ke backend (`http://localhost:5000`), sehingga frontend dan backend bisa berjalan tanpa masalah CORS.
 
 ---
 
 ## 🚀 Deployment
 
-### Vercel (Production)
+Proyek ini di-deploy pada platform **Vercel** dengan konfigurasi sebagai berikut:
 
-Proyek ini sudah di-configure untuk deploy ke **Vercel** dengan konfigurasi di `vercel.json`:
+- **Frontend**: Di-build sebagai Static Site (SPA) menggunakan `vite build`, output ke folder `apps/frontend/dist`
+- **Backend**: Di-deploy sebagai Vercel Serverless Function melalui file `api/index.js`
+- **Routing**: Semua request ke `/api/*` diarahkan ke serverless function, sementara request lainnya diarahkan ke `index.html` (SPA routing)
 
-- **Frontend**: Di-build oleh Vite, di-serve sebagai static files
-- **Backend**: Dikemas dalam serverless function di `api/index.js`
-- **Routing**: `/api/*` → serverless function, `/*` → SPA (index.html)
+### Langkah Deployment ke Vercel
 
-#### Deploy Steps
-
-1. Push ke GitHub repository
-2. Import project di [Vercel Dashboard](https://vercel.com/dashboard)
-3. Set environment variables di Vercel project settings
-4. Deploy!
-
-#### Vercel Config Highlights
-
-```json
-{
-  "buildCommand": "cd apps/frontend && npm install --include=dev && npm run build",
-  "outputDirectory": "apps/frontend/dist",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.js?path=:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
-
-### Build Frontend untuk Production
-
-```bash
-npm run build:frontend
-```
-
-Output: `apps/frontend/dist/`
+1. Push kode ke repository GitHub
+2. Hubungkan repository ke Vercel
+3. Set environment variables di Vercel Dashboard
+4. Deploy otomatis setiap push ke branch utama
 
 ---
 
-## 🔐 Environment Variables
+## 📸 Screenshot
 
-### Backend (`apps/backend/.env`)
+> *Tambahkan screenshot aplikasi di sini*
 
-| Variable | Required | Default | Deskripsi |
-|----------|----------|---------|-----------|
-| `PORT` | ❌ | `5000` | Port backend server |
-| `NODE_ENV` | ❌ | `development` | Environment mode |
-| `DATABASE_URL` | ✅ | - | PostgreSQL connection string |
-| `JWT_SECRET` | ✅ | - | Secret key untuk JWT |
-| `JWT_EXPIRES_IN` | ❌ | `7d` | Masa berlaku JWT token |
-| `MIDTRANS_SERVER_KEY` | ✅* | - | Midtrans Server Key |
-| `MIDTRANS_CLIENT_KEY` | ✅* | - | Midtrans Client Key |
-| `MIDTRANS_IS_PRODUCTION` | ❌ | `false` | `true` untuk production |
-| `FRONTEND_URL` | ❌ | `http://localhost:5173` | URL frontend (CORS) |
-| `CLOUDINARY_CLOUD_NAME` | ✅ | - | Cloudinary cloud name |
-| `CLOUDINARY_API_KEY` | ✅ | - | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | ✅ | - | Cloudinary API secret |
+<!-- Contoh:
+### Halaman Scan QR Code (Pelanggan)
+![Scan QR](./screenshots/scan-qr.png)
 
-> \* Jika tidak di-set, payment berjalan dalam **mock mode** (QR Code dummy, tidak terhubung ke Midtrans).
+### Halaman Menu (Pelanggan)
+![Menu](./screenshots/menu-list.png)
 
----
+### Halaman Keranjang (Pelanggan)
+![Cart](./screenshots/cart.png)
 
-## 📜 Scripts
+### Pembayaran QRIS (Pelanggan)
+![QRIS](./screenshots/qris-payment.png)
 
-### Root Scripts (`package.json`)
+### Dashboard Admin
+![Dashboard](./screenshots/dashboard.png)
 
-| Script | Perintah | Deskripsi |
-|--------|----------|-----------|
-| `dev` | `npm run dev` | Jalankan backend + frontend bersamaan |
-| `dev:backend` | `npm run dev:backend` | Jalankan backend saja (Nodemon) |
-| `dev:frontend` | `npm run dev:frontend` | Jalankan frontend saja (Vite) |
-| `build:frontend` | `npm run build:frontend` | Build frontend untuk production |
-| `db:generate` | `npm run db:generate` | Generate migration Drizzle |
-| `db:migrate` | `npm run db:migrate` | Jalankan migration |
-| `db:push` | `npm run db:push` | Push schema langsung ke database |
+### Manajemen Produk (Admin)
+![Products](./screenshots/products.png)
 
-### Backend Scripts (`apps/backend/package.json`)
-
-| Script | Deskripsi |
-|--------|-----------|
-| `dev` | Start dev server dengan Nodemon (auto-reload) |
-| `start` | Start production server |
-| `db:generate` | Generate Drizzle migration files |
-| `db:migrate` | Run Drizzle migrations |
-| `db:push` | Push schema ke database (tanpa migration file) |
-| `db:studio` | Buka Drizzle Studio (database GUI) |
-
-### Frontend Scripts (`apps/frontend/package.json`)
-
-| Script | Deskripsi |
-|--------|-----------|
-| `dev` | Start Vite dev server |
-| `build` | Build production bundle |
-| `preview` | Preview production build |
-| `lint` | Run ESLint |
-
----
-
-## 🛡 Keamanan
-
-### Authentication & Authorization
-- **JWT-based authentication** — Token disimpan di localStorage
-- **Auth middleware** — Memvalidasi JWT di setiap request yang memerlukan autentikasi
-- **Admin middleware** — Membatasi akses ke endpoint admin-only
-- **SSE auth** — Mendukung token via query parameter untuk EventSource (yang tidak bisa set header)
-
-### Password Security
-- Password di-hash menggunakan **bcryptjs** dengan salt rounds = 10
-- Password plain-text tidak pernah disimpan di database
-
-### Payment Security
-- Webhook Midtrans diverifikasi via **SHA512 signature**
-- Payment status hanya diubah oleh backend (never trusted from frontend)
-- **Idempotent processing** — Transaksi yang sudah `paid` tidak diproses ulang
-- Jumlah pembayaran diverifikasi terhadap total pesanan
-
-### File Upload
-- Upload dibatasi maksimal **5MB**
-- Hanya menerima format gambar: **JPEG, JPG, PNG, GIF, WebP**
-- File di-upload ke **Cloudinary** (tidak disimpan di server)
-- Menggunakan **memory storage** (Multer) — kompatibel dengan serverless (Vercel)
-
-### CORS
-- Origin di-configure berdasarkan `FRONTEND_URL`
-- Methods yang diizinkan: `GET, POST, PUT, DELETE, PATCH, OPTIONS`
-
-### Background Jobs
-- **Auto Unlock Job** — Membersihkan meja yang terkunci oleh transaksi stale setiap 60 detik
-- Guard terhadap overlapping execution
-- Graceful shutdown saat server berhenti
+### Manajemen Transaksi (Admin)
+![Transactions](./screenshots/transactions.png)
+-->
 
 ---
 
 ## 📄 Lisensi
 
-Proyek ini dibuat untuk keperluan internal / pembelajaran.
+Proyek ini dibuat untuk keperluan **Tugas Akhir / Skripsi** dan tidak ditujukan untuk distribusi komersial.
 
 ---
 
 <p align="center">
-  Built with ❤️ for a better dining experience.
+  Dibuat dengan ❤️ menggunakan React.js, Express.js, dan PostgreSQL
 </p>

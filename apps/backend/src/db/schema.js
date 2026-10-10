@@ -43,6 +43,7 @@ export const foods = pgTable('foods', {
   categoriesId: integer('categories_id').references(() => categories.id, {
     onDelete: 'cascade',
   }),
+  isAvailable: boolean('is_available').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
