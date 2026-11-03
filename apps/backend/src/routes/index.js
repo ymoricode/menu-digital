@@ -8,6 +8,7 @@ import transactionRoutes from './transaction.routes.js';
 import paymentRoutes from './payment.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import notificationRoutes from './notification.routes.js';
+import recommendationRoutes from './recommendation.routes.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/transactions', transactionRoutes);
 router.use('/payment', paymentRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/recommendations', recommendationRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

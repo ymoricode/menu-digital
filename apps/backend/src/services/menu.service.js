@@ -16,7 +16,6 @@ export const getAllMenus = async (search = '', categoryId = null) => {
         price: foods.price,
         categoriesId: foods.categoriesId,
         categoryName: categories.name,
-        isAvailable: foods.isAvailable,
         createdAt: foods.createdAt,
       })
       .from(foods)
@@ -60,7 +59,6 @@ export const getMenuById = async (id) => {
         price: foods.price,
         categoriesId: foods.categoriesId,
         categoryName: categories.name,
-        isAvailable: foods.isAvailable,
         createdAt: foods.createdAt,
       })
       .from(foods)

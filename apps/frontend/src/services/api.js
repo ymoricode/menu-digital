@@ -162,4 +162,13 @@ export const dashboardAPI = {
   getRecentTransactions: (limit) => api.get('/dashboard/recent-transactions', { params: { limit } }),
 };
 
+// ========================
+// RECOMMENDATIONS API (Apriori)
+// ========================
+export const recommendationsAPI = {
+  getByFoodId: (foodId, limit = 4) => api.get(`/recommendations/${foodId}`, { params: { limit } }),
+  getRules: () => api.get('/recommendations/rules'),
+  runAnalysis: (params) => api.post('/recommendations/analyze', params),
+};
+
 export default api;

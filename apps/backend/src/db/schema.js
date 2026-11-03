@@ -6,6 +6,7 @@ import {
   integer,
   timestamp,
   boolean,
+  doublePrecision,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -43,7 +44,6 @@ export const foods = pgTable('foods', {
   categoriesId: integer('categories_id').references(() => categories.id, {
     onDelete: 'cascade',
   }),
-  isAvailable: boolean('is_available').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -105,6 +105,28 @@ export const transactionItems = pgTable('transaction_items', {
 });
 
 // ============================
+// TABLE: apriori_rules
+// Hasil analisis Association Rule Mining (Apriori)
+// ============================
+export const aprioriRules = pgTable('apriori_rules', {
+  id: serial('id').primaryKey(),
+  antecedentFoodId: integer('antecedent_food_id').references(() => foods.id, {
+    onDelete: 'cascade',
+  }).notNull(),
+  consequentFoodId: integer('consequent_food_id').references(() => foods.id, {
+    onDelete: 'cascade',
+  }).notNull(),
+  support: doublePrecision('support').notNull(),
+  confidence: doublePrecision('confidence').notNull(),
+  lift: doublePrecision('lift').notNull(),
+  transactionCount: integer('transaction_count').default(0),
+  totalTransactions: integer('total_transactions').default(0),
+  computedAt: timestamp('computed_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// ============================
 // RELATIONS
 // ============================
 export const usersRelations = relations(users, ({ many }) => ({
@@ -121,6 +143,16 @@ export const foodsRelations = relations(foods, ({ one, many }) => ({
     references: [categories.id],
   }),
   transactionItems: many(transactionItems),
+  antecedentRules: many(aprioriRules, {
+    fields: [foods.id],
+    references: [aprioriRules.antecedentFoodId],
+    relationName: 'antecedentFood',
+  }),
+  consequentRules: many(aprioriRules, {
+    fields: [foods.id],
+    references: [aprioriRules.consequentFoodId],
+    relationName: 'consequentFood',
+  }),
 }));
 
 export const barcodesRelations = relations(barcodes, ({ one, many }) => ({
@@ -147,5 +179,18 @@ export const transactionItemsRelations = relations(transactionItems, ({ one }) =
   food: one(foods, {
     fields: [transactionItems.foodsId],
     references: [foods.id],
+  }),
+}));
+
+export const aprioriRulesRelations = relations(aprioriRules, ({ one }) => ({
+  antecedentFood: one(foods, {
+    fields: [aprioriRules.antecedentFoodId],
+    references: [foods.id],
+    relationName: 'antecedentFood',
+  }),
+  consequentFood: one(foods, {
+    fields: [aprioriRules.consequentFoodId],
+    references: [foods.id],
+    relationName: 'consequentFood',
   }),
 }));

@@ -1,25 +1,49 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, ShoppingCart, Utensils, Heart, Share2 } from 'lucide-react';
-import { menuAPI, getImageUrl } from '../../services/api';
+import { ArrowLeft, Plus, Minus, ShoppingCart, Utensils, Heart, Sparkles } from 'lucide-react';
+import { menuAPI, recommendationsAPI, getImageUrl } from '../../services/api';
 import { useCart } from '../../hooks/useCart';
 import toast from 'react-hot-toast';
 
 const MenuDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem, getItemQuantity, getTotalItems, getTotalPrice } = useCart();
+  const { addItem, getItemQuantity, getTotalItems } = useCart();
   
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    const fetchMenu = async () => {
+    // Scroll to top saat membuka detail produk
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const fetchMenuAndRecommendations = async () => {
       try {
+        setLoading(true);
+        setQuantity(1);
+        setImageLoaded(false);
+
+        // 1. Ambil data menu utama
         const response = await menuAPI.getById(id);
         setMenu(response.data.data);
+
+        // 2. Ambil rekomendasi Apriori yang valid dari backend
+        setRecommendationsLoading(true);
+        try {
+          const recResponse = await recommendationsAPI.getByFoodId(id);
+          const recData = recResponse.data?.data;
+          setRecommendations(Array.isArray(recData) ? recData : []);
+        } catch (recError) {
+          console.error('Error fetching apriori recommendations:', recError);
+          // Kegagalan rekomendasi tidak boleh menggagalkan halaman detail produk
+          setRecommendations([]);
+        } finally {
+          setRecommendationsLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching menu:', error);
         toast.error('Gagal memuat detail menu');
@@ -29,7 +53,7 @@ const MenuDetail = () => {
       }
     };
 
-    fetchMenu();
+    fetchMenuAndRecommendations();
   }, [id, navigate]);
 
   const formatPrice = (price) => {
@@ -37,10 +61,11 @@ const MenuDetail = () => {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(price);
+    }).format(price || 0);
   };
 
   const handleAddToCart = () => {
+    if (!menu) return;
     for (let i = 0; i < quantity; i++) {
       addItem(menu);
     }
@@ -144,7 +169,7 @@ const MenuDetail = () => {
           {/* Handle Bar */}
           <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
 
-          {/* Title & Price */}
+          {/* 1. Nama Produk & 2. Harga Produk */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">
               {menu.name}
@@ -161,19 +186,72 @@ const MenuDetail = () => {
             </div>
           </div>
 
-          {/* Description */}
+          {/* 3. Deskripsi */}
           {menu.description && (
-            <div className="mb-8">
+            <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Deskripsi
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed text-sm">
                 {menu.description}
               </p>
             </div>
           )}
 
-          {/* Quantity Selector */}
+          {/* 4 & 5. Bagian Rekomendasi: Sering Dipesan Bersama */}
+          {/* Hanya ditampilkan jika terdapat rekomendasi valid dari analisis Apriori */}
+          {recommendations && recommendations.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                    <span>Sering Dipesan Bersama</span>
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Menu yang sering dibeli bersama produk ini
+                  </p>
+                </div>
+              </div>
+
+              {/* Horizontal Scrolling Card List */}
+              <div className="flex gap-3 overflow-x-auto pb-2 pt-1 -mx-2 px-2 scrollbar-none">
+                {recommendations.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(`/menu/${item.id}`)}
+                    className="flex-shrink-0 w-36 bg-white rounded-2xl p-2.5 border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group active:scale-95"
+                  >
+                    {/* Foto Produk */}
+                    <div className="relative w-full h-24 bg-gray-100 rounded-xl overflow-hidden mb-2">
+                      {item.image ? (
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Utensils className="w-8 h-8 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Nama Produk */}
+                    <h4 className="text-xs font-semibold text-gray-800 line-clamp-2 leading-snug mb-1 group-hover:text-orange-600 transition-colors">
+                      {item.name}
+                    </h4>
+
+                    {/* Harga Produk */}
+                    <p className="text-xs font-bold text-orange-500">
+                      {formatPrice(item.price)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 6. Jumlah Pesanan */}
           <div className="bg-gray-50 rounded-3xl p-5">
             <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 text-center">
               Jumlah Pesanan
@@ -201,8 +279,8 @@ const MenuDetail = () => {
         </div>
       </div>
 
-      {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+      {/* 7. Total Harga & 8. Tombol Tambah ke Keranjang (Fixed Bottom) */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-10 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <div>
             <span className="text-sm text-gray-500">Total Harga</span>
@@ -214,9 +292,9 @@ const MenuDetail = () => {
         
         <button
           onClick={handleAddToCart}
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl py-5 font-bold text-lg flex items-center justify-center gap-3 shadow-xl shadow-orange-200 active:scale-[0.98] transition-transform"
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-orange-200 active:scale-[0.98] transition-transform"
         >
-          <ShoppingCart className="w-6 h-6" />
+          <ShoppingCart className="w-5 h-5" />
           Tambah ke Keranjang
         </button>
       </div>
