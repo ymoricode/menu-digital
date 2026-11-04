@@ -1,4 +1,4 @@
-import { db } from '../db/index.js';
+import { db, pool } from '../db/index.js';
 import { aprioriRules, foods, categories } from '../db/schema.js';
 import { eq, and, gt, ne, desc } from 'drizzle-orm';
 import aprioriService from './apriori.service.js';
@@ -6,6 +6,36 @@ import aprioriService from './apriori.service.js';
 /**
  * Service Rekomendasi Menu Berdasarkan Hasil Association Rule Mining (Apriori)
  */
+
+let tableEnsured = false;
+
+/**
+ * Memastikan tabel apriori_rules sudah ada di database
+ */
+export const ensureTable = async () => {
+  if (tableEnsured) return;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS apriori_rules (
+        id SERIAL PRIMARY KEY,
+        antecedent_food_id INTEGER NOT NULL REFERENCES foods(id) ON DELETE CASCADE,
+        consequent_food_id INTEGER NOT NULL REFERENCES foods(id) ON DELETE CASCADE,
+        support DOUBLE PRECISION NOT NULL,
+        confidence DOUBLE PRECISION NOT NULL,
+        lift DOUBLE PRECISION NOT NULL,
+        transaction_count INTEGER DEFAULT 0,
+        total_transactions INTEGER DEFAULT 0,
+        computed_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_apriori_rules_antecedent ON apriori_rules(antecedent_food_id);
+    `);
+    tableEnsured = true;
+  } catch (err) {
+    console.error('Error ensuring apriori_rules table exists:', err.message);
+  }
+};
 
 /**
  * Mengambil rekomendasi menu "Sering Dipesan Bersama" untuk suatu produk (antecedent)
@@ -17,6 +47,20 @@ export const getRecommendations = async (foodId, limit = 4) => {
     const targetFoodId = parseInt(foodId, 10);
     if (isNaN(targetFoodId)) {
       return [];
+    }
+
+    // Pastikan tabel apriori_rules sudah dibuat
+    await ensureTable();
+
+    // Jika tabel aturan masih kosong, jalankan analisis Apriori secara otomatis
+    try {
+      const countRes = await pool.query('SELECT COUNT(*) FROM apriori_rules');
+      const ruleCount = parseInt(countRes.rows[0]?.count || 0, 10);
+      if (ruleCount === 0) {
+        await aprioriService.mineAssociationRules();
+      }
+    } catch (countErr) {
+      console.warn('Auto-mining check warning:', countErr.message);
     }
 
     // Ambil rules dari tabel apriori_rules di mana produk saat ini adalah antecedent
@@ -95,6 +139,8 @@ export const getRecommendations = async (foodId, limit = 4) => {
  */
 export const getAllRules = async () => {
   try {
+    await ensureTable();
+
     const rules = await db
       .select({
         id: aprioriRules.id,
@@ -134,12 +180,13 @@ export const getAllRules = async () => {
  * Menjalankan proses analisis Apriori dan memperbarui database rules
  */
 export const runAnalysis = async (options) => {
+  await ensureTable();
   return await aprioriService.mineAssociationRules(options);
 };
 
 export default {
+  ensureTable,
   getRecommendations,
   getAllRules,
   runAnalysis,
 };
-

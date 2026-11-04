@@ -7,7 +7,7 @@ app.use(
   cors({
     origin: "*",
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -21,7 +21,8 @@ let authRoutes,
   barcodeRoutes,
   transactionRoutes,
   paymentRoutes,
-  dashboardRoutes;
+  dashboardRoutes,
+  recommendationRoutes;
 let routesLoaded = false;
 let loadError = null;
 
@@ -45,13 +46,16 @@ try {
   dashboardRoutes = (
     await import("../apps/backend/src/routes/dashboard.routes.js")
   ).default;
+  recommendationRoutes = (
+    await import("../apps/backend/src/routes/recommendation.routes.js")
+  ).default;
   routesLoaded = true;
 } catch (error) {
   loadError = error;
   console.error("Failed to load routes:", error);
 }
 
-app.all("*", (req, res, next) => {
+app.all("*", async (req, res, next) => {
   const queryPath = req.query.path || "";
 
   if (queryPath === "health" || req.path === "/health") {
@@ -65,14 +69,41 @@ app.all("*", (req, res, next) => {
   }
 
   if (queryPath === "debug" || req.path === "/debug") {
+    let dbStatus = {};
+    try {
+      const { pool } = await import("../apps/backend/src/db/index.js");
+      const tables = await pool.query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name"
+      );
+      const txCount = await pool.query("SELECT count(*) FROM transactions");
+      const txPaid = await pool.query(
+        "SELECT count(*) FROM transactions WHERE payment_status IN ('paid', 'completed')"
+      );
+      const txItems = await pool.query("SELECT count(*) FROM transaction_items");
+      const hasApriori = tables.rows.some((r) => r.table_name === "apriori_rules");
+      let rulesCount = 0;
+      if (hasApriori) {
+        const rCount = await pool.query("SELECT count(*) FROM apriori_rules");
+        rulesCount = parseInt(rCount.rows[0].count, 10);
+      }
+      dbStatus = {
+        connected: true,
+        tables: tables.rows.map((r) => r.table_name),
+        transactionsTotal: parseInt(txCount.rows[0].count, 10),
+        transactionsPaid: parseInt(txPaid.rows[0].count, 10),
+        transactionItemsTotal: parseInt(txItems.rows[0].count, 10),
+        hasAprioriTable: hasApriori,
+        rulesCount,
+      };
+    } catch (e) {
+      dbStatus = { connected: false, error: e.message };
+    }
     return res.json({
       queryPath,
       url: req.url,
       path: req.path,
-      originalUrl: req.originalUrl,
-      query: req.query,
-      method: req.method,
       routesLoaded,
+      dbStatus,
     });
   }
 
@@ -89,6 +120,7 @@ app.all("*", (req, res, next) => {
         "/transactions",
         "/payment",
         "/dashboard",
+        "/recommendations",
       ],
     });
   }
@@ -126,6 +158,8 @@ app.all("*", (req, res, next) => {
       return paymentRoutes(req, res, next);
     case "dashboard":
       return dashboardRoutes(req, res, next);
+    case "recommendations":
+      return recommendationRoutes(req, res, next);
     default:
       return res.status(404).json({
         success: false,
