@@ -144,6 +144,9 @@ export const transactionsAPI = {
   // ── Cancel order ──
   cancel: (id) => api.patch(`/transactions/${id}/cancel`),
 
+  // ── Delete transaction ──
+  delete: (id) => api.delete(`/transactions/${id}`),
+
   // ── Check table status before ordering ──
   checkTableStatus: (barcodeId) => api.get(`/transactions/table-status/${barcodeId}`),
 

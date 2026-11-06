@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Eye, Receipt, Download, CheckCircle2, XCircle, Loader2, ChevronDown, TrendingUp, AlertTriangle, Clock, DollarSign, Filter } from 'lucide-react';
+import { Search, Eye, Trash2, Receipt, Download, CheckCircle2, XCircle, Loader2, ChevronDown, TrendingUp, AlertTriangle, Clock, DollarSign, Filter } from 'lucide-react';
 import { transactionsAPI } from '../../services/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -74,6 +74,9 @@ const Transactions = () => {
   const [showDetailFilter, setShowDetailFilter] = useState(false);
   const [completingId, setCompletingId] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchTransactions();
@@ -217,6 +220,40 @@ const Transactions = () => {
       toast.error(errorMessage);
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  // ── DELETE TRANSACTION (with modal confirmation) ──
+  const openDeleteModal = (transaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!transactionToDelete || deletingId) return;
+
+    setDeletingId(transactionToDelete.id);
+
+    try {
+      await transactionsAPI.delete(transactionToDelete.id);
+      toast.success(`Transaksi ${transactionToDelete.code} berhasil dihapus`);
+
+      // Close modals
+      setDeleteModalOpen(false);
+      if (selectedTransaction?.id === transactionToDelete.id) {
+        setDetailModalOpen(false);
+        setSelectedTransaction(null);
+      }
+      setTransactionToDelete(null);
+
+      // Refresh list
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      const errorMessage = error.response?.data?.message || 'Gagal menghapus transaksi';
+      toast.error(errorMessage);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -575,6 +612,15 @@ const Transactions = () => {
                             <Eye className="w-4 h-4" />
                           </button>
 
+                          {/* ── Delete Button ── */}
+                          <button
+                            onClick={() => openDeleteModal(transaction)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus Transaksi"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
                           {/* ── Complete Order Button ── */}
                           {transaction.paymentStatus === 'paid' && (
                             <button
@@ -811,8 +857,64 @@ const Transactions = () => {
                 </div>
               </div>
             )}
+
+            {/* Delete button in Detail Modal */}
+            <div className="border-t pt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => openDeleteModal(selectedTransaction)}
+                className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg font-medium transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Hapus Transaksi Ini
+              </button>
+            </div>
           </div>
         )}
+      </Modal>
+
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => !deletingId && setDeleteModalOpen(false)}
+        title="Konfirmasi Hapus Transaksi"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-red-50 text-red-700 rounded-xl">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">
+                Apakah Anda yakin ingin menghapus transaksi ini?
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                Kode: <span className="font-mono font-bold">{transactionToDelete?.code}</span>
+                {transactionToDelete?.name && ` • Pelanggan: ${transactionToDelete.name}`}
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            Data transaksi beserta seluruh item pesanan terkait akan dihapus secara permanen dari sistem dan tidak dapat dipulihkan.
+          </p>
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={!!deletingId}
+              size="sm"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteTransaction}
+              loading={!!deletingId}
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Hapus Transaksi
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

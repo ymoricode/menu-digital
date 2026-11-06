@@ -615,6 +615,36 @@ export const cancelTransaction = async (req, res) => {
   }
 };
 
+/**
+ * Delete transaction (admin)
+ */
+export const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await transactionService.remove(parseInt(id, 10));
+
+    res.json({
+      success: true,
+      message: 'Transaksi berhasil dihapus!',
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof TransactionNotFoundError) {
+      return res.status(404).json({
+        success: false,
+        code: 'TRANSACTION_NOT_FOUND',
+        message: error.message,
+      });
+    }
+
+    console.error('Delete transaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Gagal menghapus transaksi',
+    });
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -622,6 +652,7 @@ export default {
   create,
   completeTransaction,
   cancelTransaction,
+  remove,
   paymentWebhook,
   checkPaymentStatus,
   getByExternalId,

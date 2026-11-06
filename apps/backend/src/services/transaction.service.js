@@ -690,6 +690,68 @@ export const cancel = async (transactionId) => {
   }
 };
 
+// ============================================================
+// DELETE TRANSACTION (admin — atomic)
+// ============================================================
+export const remove = async (transactionId) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // ── Step 1: Lock the transaction row ──
+    const txResult = await client.query(
+      'SELECT id, payment_status, barcode_id FROM transactions WHERE id = $1 FOR UPDATE',
+      [transactionId]
+    );
+
+    if (txResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      throw new TransactionNotFoundError(transactionId);
+    }
+
+    const tx = txResult.rows[0];
+
+    // ── Step 2: Release the table if this transaction held it ──
+    if (tx.barcode_id) {
+      await client.query(
+        'UPDATE barcodes SET is_occupied = false, locked_at = NULL, updated_at = NOW() WHERE id = $1',
+        [tx.barcode_id]
+      );
+    }
+
+    // ── Step 3: Delete transaction items ──
+    await client.query(
+      'DELETE FROM transaction_items WHERE transaction_id = $1',
+      [transactionId]
+    );
+
+    // ── Step 4: Delete the transaction row ──
+    const deleteResult = await client.query(
+      'DELETE FROM transactions WHERE id = $1 RETURNING *',
+      [transactionId]
+    );
+
+    // ── Step 5: COMMIT ──
+    await client.query('COMMIT');
+
+    return {
+      id: transactionId,
+      deleted: true,
+      transaction: deleteResult.rows[0],
+    };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Rollback error:', rollbackErr);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -698,6 +760,7 @@ export default {
   create,
   complete,
   cancel,
+  remove,
   updatePaymentStatus,
   autoUnlockStaleTables,
 };
