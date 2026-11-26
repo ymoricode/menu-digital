@@ -2,8 +2,12 @@ import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import aprioriService from '../services/apriori.service.js';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = Router();
+
+// Protect all seeder endpoints (admin only)
+router.use(authMiddleware, adminMiddleware);
 
 // ============================================================
 // TEMPORARY SEEDER ENDPOINT — DELETE AFTER USE
