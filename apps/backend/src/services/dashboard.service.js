@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { transactions, transactionItems, foods } from '../db/schema.js';
-import { eq, sql, gte, lte, and, desc } from 'drizzle-orm';
+import { eq, sql, gte, lte, and, desc, inArray } from 'drizzle-orm';
 
 /**
  * Get dashboard summary
@@ -12,11 +12,11 @@ export const getSummary = async () => {
       .select({ count: sql`count(*)::int` })
       .from(transactions);
 
-    // Total revenue (paid only)
+    // Total revenue (paid + completed)
     const [totalRevenue] = await db
       .select({ sum: sql`COALESCE(sum(${transactions.total}), 0)::int` })
       .from(transactions)
-      .where(eq(transactions.paymentStatus, 'paid'));
+      .where(inArray(transactions.paymentStatus, ['paid', 'completed']));
 
     // Total pending
     const [pendingTransactions] = await db
@@ -37,7 +37,7 @@ export const getSummary = async () => {
       .where(
         and(
           gte(transactions.createdAt, today),
-          eq(transactions.paymentStatus, 'paid')
+          inArray(transactions.paymentStatus, ['paid', 'completed'])
         )
       );
 
@@ -100,7 +100,7 @@ export const getMonthlyIncome = async (year = new Date().getFullYear()) => {
       .where(
         and(
           sql`EXTRACT(YEAR FROM ${transactions.createdAt}) = ${year}`,
-          eq(transactions.paymentStatus, 'paid')
+          inArray(transactions.paymentStatus, ['paid', 'completed'])
         )
       )
       .groupBy(sql`EXTRACT(MONTH FROM ${transactions.createdAt})`)
@@ -145,7 +145,7 @@ export const getWeeklyIncome = async () => {
       .where(
         and(
           gte(transactions.createdAt, startOfWeek),
-          eq(transactions.paymentStatus, 'paid')
+          inArray(transactions.paymentStatus, ['paid', 'completed'])
         )
       )
       .groupBy(sql`EXTRACT(DOW FROM ${transactions.createdAt})`, sql`DATE(${transactions.createdAt})`)
