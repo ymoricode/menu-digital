@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { v4 as uuidv4 } from 'uuid';
+import aprioriService from '../services/apriori.service.js';
 
 const router = Router();
 
@@ -241,7 +242,7 @@ router.post('/run', async (req, res) => {
   }
 });
 
-// ── GET /status — Check seed data ──
+// ── GET /status — Check seed data & validate integrity ──
 router.get('/status', async (req, res) => {
   try {
     const total = await pool.query('SELECT COUNT(*) FROM transactions');
@@ -253,12 +254,46 @@ router.get('/status', async (req, res) => {
     );
     
     const byMonth = await pool.query(
-      "SELECT EXTRACT(MONTH FROM created_at) as month, COUNT(*) as count FROM transactions WHERE code LIKE 'SEED-%' AND EXTRACT(YEAR FROM created_at) = 2026 GROUP BY month ORDER BY month"
+      `SELECT 
+         EXTRACT(MONTH FROM created_at)::int as month, 
+         COUNT(*)::int as count,
+         COALESCE(SUM(CASE WHEN payment_status IN ('paid', 'completed') THEN total ELSE 0 END), 0)::int as revenue,
+         COALESCE(SUM(total), 0)::int as gross_total
+       FROM transactions 
+       WHERE code LIKE 'SEED-%' AND EXTRACT(YEAR FROM created_at) = 2026 
+       GROUP BY month 
+       ORDER BY month`
     );
     
     const revenue = await pool.query(
-      "SELECT SUM(total) FROM transactions WHERE code LIKE 'SEED-%' AND payment_status IN ('paid', 'completed')"
+      "SELECT COALESCE(SUM(total), 0)::int as sum FROM transactions WHERE code LIKE 'SEED-%' AND payment_status IN ('paid', 'completed')"
     );
+
+    // Integrity validations
+    const mismatchTotals = await pool.query(`
+      SELECT COUNT(*)::int as count FROM (
+        SELECT t.id, t.total, COALESCE(SUM(ti.subtotal), 0) as calc_total
+        FROM transactions t
+        LEFT JOIN transaction_items ti ON t.id = ti.transaction_id
+        WHERE t.code LIKE 'SEED-%'
+        GROUP BY t.id, t.total
+        HAVING t.total != COALESCE(SUM(ti.subtotal), 0)
+      ) sub
+    `);
+
+    const multiWordNames = await pool.query(
+      "SELECT COUNT(*)::int as count FROM transactions WHERE code LIKE 'SEED-%' AND name ~ '\\s'"
+    );
+
+    const duplicateCodes = await pool.query(
+      "SELECT COUNT(*)::int as count FROM (SELECT code FROM transactions WHERE code LIKE 'SEED-%' GROUP BY code HAVING COUNT(*) > 1) sub"
+    );
+
+    const zeroItemTx = await pool.query(`
+      SELECT COUNT(*)::int as count FROM transactions t
+      WHERE t.code LIKE 'SEED-%'
+      AND NOT EXISTS (SELECT 1 FROM transaction_items ti WHERE ti.transaction_id = t.id)
+    `);
 
     res.json({
       success: true,
@@ -266,11 +301,27 @@ router.get('/status', async (req, res) => {
         totalTransactions: parseInt(total.rows[0].count, 10),
         seedTransactions: parseInt(seed.rows[0].count, 10),
         originalTransactions: parseInt(original.rows[0].count, 10),
-        seedByMonth: byMonth.rows.map(r => ({ month: parseInt(r.month, 10), count: parseInt(r.count, 10) })),
+        seedByMonth: byMonth.rows,
         seedByStatus: byStatus.rows.map(r => ({ status: r.payment_status, count: parseInt(r.count, 10) })),
-        seedRevenue: parseInt(revenue.rows[0].sum || 0, 10),
+        seedRevenue: revenue.rows[0].sum,
+        validation: {
+          mismatchedTotals: mismatchTotals.rows[0].count,
+          multiWordNames: multiWordNames.rows[0].count,
+          duplicateCodes: duplicateCodes.rows[0].count,
+          zeroItemTransactions: zeroItemTx.rows[0].count,
+        },
       },
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ── POST /reanalyze — Re-run Apriori analysis on all paid/completed transactions ──
+router.post('/reanalyze', async (req, res) => {
+  try {
+    const result = await aprioriService.mineAssociationRules();
+    res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
