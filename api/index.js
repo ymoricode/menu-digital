@@ -22,7 +22,8 @@ let authRoutes,
   transactionRoutes,
   paymentRoutes,
   dashboardRoutes,
-  recommendationRoutes;
+  recommendationRoutes,
+  seederRoutes;
 let routesLoaded = false;
 let loadError = null;
 
@@ -48,6 +49,9 @@ try {
   ).default;
   recommendationRoutes = (
     await import("../apps/backend/src/routes/recommendation.routes.js")
+  ).default;
+  seederRoutes = (
+    await import("../apps/backend/src/routes/seeder.routes.js")
   ).default;
   routesLoaded = true;
 } catch (error) {
@@ -160,6 +164,8 @@ app.all("*", async (req, res, next) => {
       return dashboardRoutes(req, res, next);
     case "recommendations":
       return recommendationRoutes(req, res, next);
+    case "seeder":
+      return seederRoutes(req, res, next);
     default:
       return res.status(404).json({
         success: false,

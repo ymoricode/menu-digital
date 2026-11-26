@@ -9,6 +9,7 @@ import paymentRoutes from './payment.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import notificationRoutes from './notification.routes.js';
 import recommendationRoutes from './recommendation.routes.js';
+import seederRoutes from './seeder.routes.js';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use('/payment', paymentRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/recommendations', recommendationRoutes);
+router.use('/seeder', seederRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
